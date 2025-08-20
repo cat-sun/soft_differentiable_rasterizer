@@ -7,7 +7,7 @@
 @IDE ：PyCharm
 
 """
-#!/usr/bin/env python
+# !/usr/bin/env python
 # coding: utf-8
 from datetime import datetime
 import json
@@ -35,7 +35,6 @@ from sympy import Triangle
 from jax.example_libraries import stax
 from jax.example_libraries.stax import Conv, Relu, Flatten
 
-
 # 启用64位精度以获得更稳定的梯度
 jax.config.update("jax_enable_x64", True)
 import random
@@ -57,51 +56,68 @@ class Circle:
     color: jnp.ndarray  # [r, g, b, a]
     depth: jnp.ndarray  # 深度值，可优化
 
+
 @dataclass
 class Rectangle:
     center: jnp.ndarray  # [x, y] (归一化坐标系)
     size: jnp.ndarray  # [width, height] (归一化单位)
     rotate_theta: jnp.ndarray  # 弧
-    round: jnp.ndarray # 圆角半径（归一化单位）
+    round: jnp.ndarray  # 圆角半径（归一化单位）
     color: jnp.ndarray  # [r, g, b, a]
     depth: jnp.ndarray  # 深度值，可优化
+
+
 @dataclass
 class Triangle:
     center: jnp.ndarray  # [x, y] (归一化坐标系)
     radius: jnp.ndarray  # [width, height] (归一化单位)
     rotate_theta: jnp.ndarray
-    round: jnp.ndarray # 圆角半径（归一化单位）
+    round: jnp.ndarray  # 圆角半径（归一化单位）
     color: jnp.ndarray  # [r, g, b, a]
     depth: jnp.ndarray  # 深度值，可优化
+
+
 @dataclass
 class Arc:
     center: jnp.ndarray  # [x, y] (归一化坐标系)
     shape_theta: jnp.ndarray  # 圆弧的角度范围（弧度）
     rotate_theta: jnp.ndarray
     radius: jnp.ndarray  # 标量 (归一化单位)
-    round: jnp.ndarray # 圆弧圆角半径
+    round: jnp.ndarray  # 圆弧圆角半径
     color: jnp.ndarray  # [r, g, b, a]
     depth: jnp.ndarray  # 深度值，可优化
 
+
+# @dataclass
+# class Capsule:
+#     center: jnp.ndarray  # [x, y] (归一化坐标系) 胶囊中心点坐标
+#     radius: jnp.ndarray  # 胶囊线段部分的长度
+#     rotate_theta: jnp.ndarray  # 旋转角度
+#     round: jnp.ndarray  # 胶囊的宽度
+#     color: jnp.ndarray
+#     depth: jnp.ndarray  # 深度值，可优化
 @dataclass
 class Capsule:
     center: jnp.ndarray  # [x, y] (归一化坐标系) 胶囊中心点坐标
-    radius: jnp.ndarray  # 胶囊线段部分的长度
+    length: jnp.ndarray  # 胶囊线段部分的长度
+    a: jnp.ndarray  # 胶囊弯曲程度
     rotate_theta: jnp.ndarray  # 旋转角度
     round: jnp.ndarray  # 胶囊的宽度
     color: jnp.ndarray
     depth: jnp.ndarray  # 深度值，可优化
 
+
 @dataclass
 class Trapezoid:
     center: jnp.ndarray  # [x, y] (归一化坐标系)
-    width1: jnp.ndarray # 底宽
-    width2: jnp.ndarray #顶宽
+    width1: jnp.ndarray  # 底宽
+    width2: jnp.ndarray  # 顶宽
     height: jnp.ndarray  # 高
     rotate_theta: jnp.ndarray
     round: jnp.ndarray  # 圆角半径（归一化单位）
     color: jnp.ndarray  # [r, g, b, a]
     depth: jnp.ndarray  # 深度值，可优化
+
 
 @dataclass
 class Star:
@@ -114,6 +130,7 @@ class Star:
     color: jnp.ndarray  # [r, g, b, a]
     depth: jnp.ndarray  # 深度值，可优化
 
+
 @dataclass
 class halfCircle:
     center: jnp.ndarray  # [x, y] (归一化坐标系)
@@ -123,51 +140,59 @@ class halfCircle:
     color: jnp.ndarray  # [r, g, b, a]
     depth: jnp.ndarray  # 深度值，可优化
 
+
 # 注册自定义类型为PyTree节点
 tree_util.register_pytree_node(
     Circle,
-    lambda c: ((c.center, c.radius, c.color,c.depth), None),
+    lambda c: ((c.center, c.radius, c.color, c.depth), None),
     lambda _, data: Circle(*data)
 )
 
 tree_util.register_pytree_node(
     Rectangle,
-    lambda r: ((r.center, r.size, r.rotate_theta, r.round,r.color,r.depth), None),
+    lambda r: ((r.center, r.size, r.rotate_theta, r.round, r.color, r.depth), None),
     lambda _, data: Rectangle(*data)
 )
 tree_util.register_pytree_node(
     Triangle,
-    lambda r: ((r.center, r.radius, r.rotate_theta, r.round,r.color,r.depth), None),
+    lambda r: ((r.center, r.radius, r.rotate_theta, r.round, r.color, r.depth), None),
     lambda _, data: Triangle(*data)
 )
 
 tree_util.register_pytree_node(
     Arc,
-    lambda c: ((c.center,c.shape_theta, c.rotate_theta, c.radius,c.round,c.color,c.depth), None),
+    lambda c: ((c.center, c.shape_theta, c.rotate_theta, c.radius, c.round, c.color, c.depth), None),
     lambda _, data: Arc(*data)
 )
+# tree_util.register_pytree_node(
+#     Capsule,
+#     lambda c: ((c.center,c.radius,c.rotate_theta, c.round,c.color,c.depth), None),
+#     lambda _, data: Capsule(*data)
+# )
 tree_util.register_pytree_node(
     Capsule,
-    lambda c: ((c.center,c.radius,c.rotate_theta, c.round,c.color,c.depth), None),
+    lambda c: ((c.center, c.length, c.a, c.rotate_theta, c.round, c.color, c.depth), None),
     lambda _, data: Capsule(*data)
 )
+
 tree_util.register_pytree_node(
     Trapezoid,
-    lambda c: ((c.center, c.bottom_width, c.top_width, c.height, c.round_radius, c.rotate_theta,c.color,c.depth), None),
+    lambda c: ((c.center, c.bottom_width, c.top_width, c.height, c.round_radius, c.rotate_theta, c.color, c.depth),
+               None),
     lambda _, data: Trapezoid(*data)
 )
 tree_util.register_pytree_node(
     Star,
-    lambda s: ((s.center, s.radius,s.theta, s.external_angle, s.round, s.k, s.color,s.depth), None),
+    lambda s: ((s.center, s.radius, s.theta, s.external_angle, s.round, s.k, s.color, s.depth), None),
     lambda _, data: Star(*data)
 )
 
-
 tree_util.register_pytree_node(
     halfCircle,
-    lambda c: ((c.center, c.radius, c.rotate_theta, c.round,c.color,c.depth), None),
+    lambda c: ((c.center, c.radius, c.rotate_theta, c.round, c.color, c.depth), None),
     lambda _, data: halfCircle(*data)
 )
+
 
 # ==============================
 # 符号距离函数 (SDF) - 在归一化坐标系中
@@ -179,7 +204,7 @@ def Circle_sdf(center, radius, points):
     return dist - radius
 
 
-def halfCircle_sdf(center,radius, rotate_theta,cut_offset, points):
+def halfCircle_sdf(center, radius, rotate_theta, cut_offset, points):
     """
     计算旋转圆盘的SDF
 
@@ -254,14 +279,14 @@ def rectangle_sdf(center, size, rotate_theta, round, points):
     size = jnp.maximum(size, 0.0)  # 确保尺寸为正
 
     def compute_valid_sdf():
-        x,y=center
-        w,h=size
+        x, y = center
+        w, h = size
         # 获取旋转矩阵
         cos_theta = jnp.cos(rotate_theta)
         sin_theta = jnp.sin(rotate_theta)
 
         rotate_mat = jnp.array([[cos_theta, -sin_theta],
-                          [sin_theta, cos_theta]])
+                                [sin_theta, cos_theta]])
         # 3. 平移向量 (2,)
         trans = jnp.array([x, y])
 
@@ -277,13 +302,13 @@ def rectangle_sdf(center, size, rotate_theta, round, points):
         # 6. 计算外部距离（超出矩形的圆角距离）
         q0 = jnp.clip(p0, a_min=0.0)  # (N,)
         q1 = jnp.clip(p1, a_min=0.0)  # (N,)
-        outside = jnp.sqrt(q0 ** 2 + q1 ** 2+1e-12)  # (N,)
+        outside = jnp.sqrt(q0 ** 2 + q1 ** 2 + 1e-12)  # (N,)
 
         # 7. 计算内部距离（矩形内部的距离）
         inside = jnp.clip(jnp.maximum(p0, p1), a_max=0.0)  # (N,)
 
         # 8. 组合内外距离并应用圆角
-        sdf = outside + inside -round
+        sdf = outside + inside - round
         return sdf
 
     def invalid_sdf():
@@ -295,8 +320,10 @@ def rectangle_sdf(center, size, rotate_theta, round, points):
 
     # 使用条件选择函数
     return jax.lax.cond(is_valid, compute_valid_sdf, invalid_sdf)
-def triangle_sdf(center,radius,rotate_theta,round,points):
-    x,y=center
+
+
+def triangle_sdf(center, radius, rotate_theta, round, points):
+    x, y = center
     # 计算等边三角形边长（基于外接圆半径）
 
     pi = jnp.pi
@@ -305,7 +332,7 @@ def triangle_sdf(center,radius,rotate_theta,round,points):
     sin_theta = jnp.sin(rotate_theta)
     # 旋转矩阵和坐标变换
     rotate_mat = jnp.array([[cos_theta, -sin_theta],
-                     [sin_theta, cos_theta]])
+                            [sin_theta, cos_theta]])
     trans = jnp.array([x, y])
 
     translated = points - trans
@@ -314,8 +341,8 @@ def triangle_sdf(center,radius,rotate_theta,round,points):
 
     # 应用旋转和平移（转换到三角形局部坐标系）
     # 提取x和y坐标
-    coords0 = jnp.abs(new_coords[..., 0])   # x坐标取绝对值（利用对称性）
-    coords1 = new_coords[..., 1]   # y坐标
+    coords0 = jnp.abs(new_coords[..., 0])  # x坐标取绝对值（利用对称性）
+    coords1 = new_coords[..., 1]  # y坐标
 
     # 等边三角形的几何常数（√3）
     k = jnp.sqrt(3.0)
@@ -345,10 +372,11 @@ def triangle_sdf(center,radius,rotate_theta,round,points):
     sdf = -jnp.linalg.norm(jnp.stack([pp0, pp1], axis=0), axis=0) * jnp.sign(pp1)
 
     # 应用圆角处理
-    sdf = sdf-round
+    sdf = sdf - round
     return sdf
 
-def capsule_sdf(center,radius,rotate_theta,round,points):
+
+def capsule_sdf(center, radius, rotate_theta, round, points):
     """
     计算点集到胶囊形状的有向距离函数
 
@@ -361,7 +389,7 @@ def capsule_sdf(center,radius,rotate_theta,round,points):
     返回:
     点集到胶囊的有向距离，形状为(n,)
     """
-    x,y = center
+    x, y = center
 
     radius = jnp.maximum(radius, 1e-8)  # 避免半径为0导致数值问题
     length = 2 * round  # 胶囊体线段长度
@@ -402,7 +430,8 @@ def capsule_sdf(center,radius,rotate_theta,round,points):
     sdf = dist - radius  # 胶囊体SDF
     return sdf
 
-def arc_sdf(center, shape_theta, rotate_theta, radius,round_radius, points):
+
+def arc_sdf(center, shape_theta, rotate_theta, radius, round_radius, points):
     """
     计算两端带相同弧度的圆弧SDF（适配新参数列表）
 
@@ -415,7 +444,7 @@ def arc_sdf(center, shape_theta, rotate_theta, radius,round_radius, points):
     round_radius: 起点和终点的圆角半径（统一值）
     points: 待计算的点集
     """
-    x,y = center
+    x, y = center
     ra = jnp.maximum(radius, 1e-8)  # 避免半径为0导致数值问题
     rb = jnp.maximum(round_radius, 0.0)  # 确保宽度非负
 
@@ -460,45 +489,58 @@ def arc_sdf(center, shape_theta, rotate_theta, radius,round_radius, points):
     sdf = jnp.where(mask, d2, d1)
     return sdf
 
-def curved_capsule_sdf(center, length, width, rotate_theta, curve_strength, points):
+
+def curved_capsule_sdf(center, length, a, rotate_theta, round_param, points):
     """
     计算弧形边胶囊的SDF
 
     参数:
-    curve_strength: 控制边缘弯曲程度的参数 (0表示普通胶囊，越大弯曲越明显)
+    (x,y)一个端点的坐标，length:胶囊长度，a：胶囊弯曲程度，rotate_theta：旋转角度，round_param：胶囊粗度。
     """
-    # 基础胶囊SDF
-    base_sdf = capsule_sdf(center, length, width, rotate_theta, points)
 
-    # 计算到中心线的距离 (用于控制弯曲的位置)
-    orientation = jnp.array([jnp.cos(rotate_theta), jnp.sin(rotate_theta)])
-    perp_orient = jnp.array([-orientation[1], orientation[0]])  # 垂直方向
+    x, y = center
+    # 统一坐标格式为 (2, N)
+    if points.shape[0] != 2:
+        points = points.T  # 转换为 (2, N) 方便矩阵运算
+    # 旋转矩阵计算
+    cos_theta = jnp.cos(rotate_theta)
+    sin_theta = jnp.sin(rotate_theta)
+    rotateMat = jnp.array([[cos_theta, -sin_theta],
+                           [sin_theta, cos_theta]])
+    # 平移向量（适配 JAX 数组操作）
+    translation = jnp.array([x, y]).reshape(2, 1)
 
-    # 计算点到中心线的投影
-    center_vec = points - center
-    dist_to_center_line = jnp.abs(jnp.sum(center_vec * perp_orient, axis=-1))
+    # 坐标变换（JAX 中矩阵乘法使用 @ 运算符）
+    p = rotateMat.T @ points - rotateMat.T @ translation
+    # a = jnp.maximum(a, 1e-12)
+    # 计算 sin(a) 和 cos(a)
+    a_val = jnp.array(a, dtype=points.dtype)
+    sc = jnp.array([jnp.sin(a_val), jnp.cos(a_val)], dtype=points.dtype)
+    ra = 0.5 * length / a
+    p = p.at[0].add(-ra)  # 替代 p[0] -= ra 的 in-place 操作
 
-    # 计算弯曲因子 (距离中心线越远，弯曲影响越大)
-    max_dist = width / 2  # 胶囊边缘到中心线的最大距离
-    bend_factor = jnp.clip(dist_to_center_line / max_dist, 0, 1)
+    # 点积计算
+    dot_sp = sc[0] * p[0] + sc[1] * p[1]
+    dot_clamped = jnp.clip(dot_sp, a_min=0.0)
 
-    # 创建一个沿胶囊长度方向的弯曲函数 (使用二次函数模拟弧线)
-    # 1. 计算点在胶囊主轴上的位置参数t
-    t = jnp.sum(center_vec * orientation, axis=-1) / (length / 2)
-    t_clamped = jnp.clip(t, -1, 1)  # 将t限制在[-1,1]范围内，表示从一端到另一端
+    # 向量运算
+    q = p - 2.0 * sc[:, jnp.newaxis] * dot_clamped
+    q_len = jnp.sqrt(q[0] ** 2 + q[1] ** 2)
+    u = jnp.abs(ra) - q_len
 
-    # 2. 计算弯曲量 (两端弯曲最大，中间最小)
-    curve_amount = curve_strength * (1 - t_clamped ** 2)  # 二次函数，两端为1，中间为0
+    # 条件判断（使用 JAX 的 where 函数）
+    cond = q[1] < 0.0
+    q_plus = q + jnp.array([[ra], [0.0]], dtype=points.dtype)
+    len_q_plus = jnp.sqrt(q_plus[0] ** 2 + q_plus[1] ** 2)
+    # normalized_len = len_q_plus * (0.5*length / jnp.abs(ra))  # 抵消ra变化的影响
+    d = jnp.where(cond, len_q_plus, jnp.abs(u))
 
-    # 3. 组合弯曲因子和弯曲量
-    total_curve = bend_factor * curve_amount
-
-    # 调整原始SDF，负值表示向内弯曲
-    sdf = base_sdf - total_curve
-
+    # 计算最终 SDF 并重塑形状
+    sdf = d - round_param
     return sdf
 
-def trapezoid_sdf(center, bottom_width, top_width, height,  rotate_theta,round_radius,points):
+
+def trapezoid_sdf(center, bottom_width, top_width, height, rotate_theta, round_radius, points):
     """
     带圆角的等边梯形有向距离函数
 
@@ -564,8 +606,9 @@ def trapezoid_sdf(center, bottom_width, top_width, height,  rotate_theta,round_r
 
     return sdf
 
+
 def star_sdf(center, radius, theta, external_angle, round, k, points):
-    cx,cy = center
+    cx, cy = center
     r = jnp.maximum(radius, 1e-8)
     round_param = jnp.maximum(round, 0.0)
     k = jnp.maximum(k, 1e-8)  # 避免除以零
@@ -632,7 +675,8 @@ def star_sdf(center, radius, theta, external_angle, round, k, points):
     sdf = jnp.linalg.norm(p, axis=0) * jnp.sign(p[0, :]) - round_param  # (N,)
     return sdf
 
-def differentiable_rasterize(primitives, grid, softness=150,is_final_render=False):
+
+def differentiable_rasterize(primitives, grid, softness=150, is_final_render=False):
     """
     可微光栅化函数
     输入:
@@ -663,11 +707,13 @@ def differentiable_rasterize(primitives, grid, softness=150,is_final_render=Fals
         elif isinstance(prim, Triangle):
             sdf = triangle_sdf(prim.center, prim.radius, prim.rotate_theta, prim.round, points)
         elif isinstance(prim, Capsule):
-            sdf = capsule_sdf(prim.center, prim.radius, prim.rotate_theta, prim.round, points)
+            # sdf = capsule_sdf(prim.center, prim.radius, prim.rotate_theta, prim.round, points)
+            sdf = curved_capsule_sdf(prim.center, prim.length, prim.a, prim.rotate_theta, prim.round, points)
         elif isinstance(prim, Arc):
-            sdf = arc_sdf(prim.center,prim.shape_theta, prim.rotate_theta, prim.radius,prim.round,points)
+            sdf = arc_sdf(prim.center, prim.shape_theta, prim.rotate_theta, prim.radius, prim.round, points)
         elif isinstance(prim, Trapezoid):
-            sdf = trapezoid_sdf(prim.center, prim.width1, prim.width2, prim.height, prim.rotate_theta, prim.round, points)
+            sdf = trapezoid_sdf(prim.center, prim.width1, prim.width2, prim.height, prim.rotate_theta, prim.round,
+                                points)
         elif isinstance(prim, Star):
             sdf = star_sdf(prim.center, prim.radius, prim.theta, prim.external_angle, prim.round, prim.k, points)
         elif isinstance(prim, halfCircle):
@@ -677,9 +723,8 @@ def differentiable_rasterize(primitives, grid, softness=150,is_final_render=Fals
     sdf_matrix = jnp.stack(sdf_values, axis=0)  # [M, N]
 
     sdf_clamped = jnp.clip(sdf_matrix, -50.0, 50.0)
-    softness=jnp.where(len(primitives)>10, 100, 150)
-
-    coverage_alpha = jax.nn.sigmoid(-sdf_clamped * softness)   # [M, N]
+    softness = jnp.where(len(primitives) > 10, 100, 150)
+    coverage_alpha = jax.nn.sigmoid(-sdf_clamped * softness)  # [M, N]
     # 计算最终alpha = 基础alpha × 覆盖度alpha
     final_alpha = base_alphas[:, jnp.newaxis] * coverage_alpha  # [M, N]
 
@@ -744,7 +789,7 @@ def load_parameters(file_path):
 
         # depth按顺序从1开始
         depth = i + 1
-        depth=jnp.array(depth,dtype=jnp.float64)
+        depth = jnp.array(depth, dtype=jnp.float64)
         color = jnp.array([
             np.clip(r, 0.001, 0.999),
             np.clip(g, 0.001, 0.999),
@@ -753,12 +798,12 @@ def load_parameters(file_path):
         ])
         if prim_type == 0:
             # 格式: circle cx_norm cy_norm r_norm cr cg cb [ca]
-            center_x,center_y,radius = map(float, sparams)
-            center = jnp.array([center_x,center_y])
+            center_x, center_y, radius = map(float, sparams)
+            center = jnp.array([center_x, center_y])
             primitives.append(Circle(center, radius, color, depth))
 
         elif prim_type == 1:
-            center_x,center_y,width,height,rotate_theta,round = map(float, sparams)
+            center_x, center_y, width, height, rotate_theta, round = map(float, sparams)
             # 确保参数在有效范围内
             center_x = jnp.clip(center_x, 0.0, 1.0)
             center_y = jnp.clip(center_y, 0.0, 1.0)
@@ -769,26 +814,29 @@ def load_parameters(file_path):
             size = jnp.array([width, height])
             primitives.append(Rectangle(center, size, rotate_theta, round, color, depth))
         elif prim_type == 2:
-            center_x,center_y, radius, rotate_theta, round = map(float, sparams)
-            center = jnp.array([center_x,center_y])
-
-            primitives.append(Triangle(center, radius, rotate_theta,round, color, depth))
-        elif prim_type == 3:
-            center_x, center_y, round, rotate_theta,radius = map(float, sparams)
+            center_x, center_y, radius, rotate_theta, round = map(float, sparams)
             center = jnp.array([center_x, center_y])
-            primitives.append(Capsule(center, radius, rotate_theta, round,  color, depth))
+
+            primitives.append(Triangle(center, radius, rotate_theta, round, color, depth))
+        elif prim_type == 3:
+            # center_x, center_y, round, rotate_theta,radius = map(float, sparams)
+            # center = jnp.array([center_x, center_y])
+            # primitives.append(Capsule(center, radius, rotate_theta, round,  color, depth))
+            center_x, center_y, length, a, rotate_theta, round = map(float, sparams)
+            center = jnp.array([center_x, center_y])
+            primitives.append(Capsule(center, length, a, rotate_theta, round, color, depth))
         elif prim_type == 4:
-            center_x, center_y, shape_theta, rotate_theta, radius,round= map(float, sparams)
+            center_x, center_y, shape_theta, rotate_theta, radius, round = map(float, sparams)
             # 确保参数在有效范围内
             center_x = jnp.clip(center_x, 0.0, 1.0)
             center_y = jnp.clip(center_y, 0.0, 1.0)
             center = jnp.array([center_x, center_y])
             primitives.append(Arc(center, jnp.array(shape_theta), jnp.array(rotate_theta), radius, round,
-                    color, depth))
+                                  color, depth))
         elif prim_type == 5:
             center_x, center_y, width1, width2, height, rotate_theta, round = map(float, sparams)
             center = jnp.array([center_x, center_y])
-            primitives.append(Trapezoid(center, width1, width2, height,rotate_theta, round,color, depth))
+            primitives.append(Trapezoid(center, width1, width2, height, rotate_theta, round, color, depth))
         elif prim_type == 6:
             center_x, center_y, radius, theta, external_angle, rotate_theta, round = map(float, sparams)
 
@@ -797,7 +845,7 @@ def load_parameters(file_path):
             center_y = jnp.clip(center_y, 0.0, 1.0)
             center = jnp.array([center_x, center_y])
             # 创建五角星图元
-            primitives.append(Star(center,radius, theta, external_angle, rotate_theta, round,color, depth))
+            primitives.append(Star(center, radius, theta, external_angle, rotate_theta, round, color, depth))
         elif prim_type == 7:
             center_x, center_y, radius, rotate_theta, round = map(float, sparams)
             center = jnp.array([center_x, center_y])
@@ -840,14 +888,24 @@ def save_parameters(file_path, primitives, height, width):
                         f"{rotate_theta:.6f} {round:.6f} {cr:.6f} {cg:.6f} {cb:.6f} {ca:.6f} {depth:.6f}\n")
 
             elif isinstance(prim, Capsule):
+                # cx_norm, cy_norm = prim.center
+                # radius = prim.radius
+                # round = prim.round
+                # rotate_theta = prim.rotate_theta
+                # cr, cg, cb, ca = prim.color
+                # depth = prim.depth
+                #
+                # f.write(f"3 {cx_norm:.6f} {cy_norm:.6f} {radius:.6f} {rotate_theta:.6f} {round:.6f} "
+                #         f"{cr:.6f} {cg:.6f} {cb:.6f} {ca:.6f} {depth:.6f}\n")
                 cx_norm, cy_norm = prim.center
-                radius = prim.radius
+                length = prim.length
+                a = prim.a
                 round = prim.round
                 rotate_theta = prim.rotate_theta
                 cr, cg, cb, ca = prim.color
                 depth = prim.depth
 
-                f.write(f"3 {cx_norm:.6f} {cy_norm:.6f} {radius:.6f} {rotate_theta:.6f} {round:.6f} "
+                f.write(f"3 {cx_norm:.6f} {cy_norm:.6f} {length:.6f} {a:.6f} {rotate_theta:.6f} {round:.6f} "
                         f"{cr:.6f} {cg:.6f} {cb:.6f} {ca:.6f} {depth:.6f}\n")
             elif isinstance(prim, Arc):
                 cx_norm, cy_norm = prim.center
@@ -870,15 +928,16 @@ def save_parameters(file_path, primitives, height, width):
                 cr, cg, cb, ca = prim.color
                 depth = prim.depth
 
-                f.write(f"5 {cx_norm:.6f} {cy_norm:.6f} {width1:.6f} {width2:.6f} {height:.6f} {rotate_theta:.6f} {round:.6f}"
-                        f"{cr:.6f} {cg:.6f} {cb:.6f} {ca:.6f} {depth:.6f}\n")
+                f.write(
+                    f"5 {cx_norm:.6f} {cy_norm:.6f} {width1:.6f} {width2:.6f} {height:.6f} {rotate_theta:.6f} {round:.6f}"
+                    f"{cr:.6f} {cg:.6f} {cb:.6f} {ca:.6f} {depth:.6f}\n")
             elif isinstance(prim, Star):
                 cx_norm, cy_norm = prim.center
                 radius = prim.radius
                 theta = prim.theta
-                external_angle=prim.external_angle
+                external_angle = prim.external_angle
                 round = prim.round
-                k=prim.k
+                k = prim.k
                 cr, cg, cb, ca = prim.color
                 depth = prim.depth
 
@@ -892,7 +951,9 @@ def save_parameters(file_path, primitives, height, width):
                 cr, cg, cb, ca = prim.color
                 depth = prim.depth
 
-                f.write(f"7 {cx_norm:.6f} {cy_norm:.6f} {radius:.6f} {rotate_theta:.6f} {round:.6f} {cr:.6f} {cg:.6f} {cb:.6f} {ca:.6f} {depth:.6f}\n")
+                f.write(
+                    f"7 {cx_norm:.6f} {cy_norm:.6f} {radius:.6f} {rotate_theta:.6f} {round:.6f} {cr:.6f} {cg:.6f} {cb:.6f} {ca:.6f} {depth:.6f}\n")
+
 
 def edge_consistency_loss(rendered_img, target_img, mask=None):
     """
@@ -932,6 +993,7 @@ def edge_consistency_loss(rendered_img, target_img, mask=None):
 
     return edge_loss
 
+
 def intersection_aware_loss(primitives, grid, target_rgb, rendered_rgb):
     """
     交点感知损失函数 - 专门优化图元重叠区域
@@ -947,7 +1009,7 @@ def intersection_aware_loss(primitives, grid, target_rgb, rendered_rgb):
     """
     H, W, _ = grid.shape
     points = grid.reshape(-1, 2)
- 
+
     # 1. 计算每个图元的SDF
     sdf_matrix = []
     for prim in primitives:
@@ -958,7 +1020,8 @@ def intersection_aware_loss(primitives, grid, target_rgb, rendered_rgb):
         elif isinstance(prim, Triangle):
             sdf = triangle_sdf(prim.center, prim.radius, prim.rotate_theta, prim.round, points)
         elif isinstance(prim, Capsule):
-            sdf = capsule_sdf(prim.center, prim.radius, prim.rotate_theta, prim.round, points)
+            # sdf = capsule_sdf(prim.center, prim.radius, prim.rotate_theta, prim.round, points)
+            sdf = curved_capsule_sdf(prim.center, prim.length, prim.a, prim.rotate_theta, prim.round, points)
         elif isinstance(prim, Arc):
             sdf = arc_sdf(prim.center, prim.shape_theta, prim.rotate_theta, prim.radius, prim.round, points)
         elif isinstance(prim, Trapezoid):
@@ -997,6 +1060,7 @@ def intersection_aware_loss(primitives, grid, target_rgb, rendered_rgb):
 
     return intersection_loss + 0.1 * smoothness_reg
 
+
 def create_animation_gif(image_dir, output_file="animation.gif", frame_duration=100):
     """从渲染帧创建GIF动画"""
     frames = []
@@ -1006,6 +1070,7 @@ def create_animation_gif(image_dir, output_file="animation.gif", frame_duration=
         frames.append(np.array(img))
     imageio.mimsave(os.path.join(image_dir, output_file), frames, duration=frame_duration, loop=0)
     print(f"Animation saved to {output_file}")
+
 
 def create_animation(image_dir, fps=10):
     """
@@ -1023,6 +1088,7 @@ def create_animation(image_dir, fps=10):
     video.release()
     print("视频保存成功!")
 
+
 def save_frame(primitives, grid, output_dir, step):
     """保存优化过程中的帧"""
     rendered = differentiable_rasterize(primitives, grid)
@@ -1033,11 +1099,11 @@ def save_frame(primitives, grid, output_dir, step):
 
 def staged_optimization(primitives, grid, target_img, output_dir):
     """两阶段优化：先优化颜色，再联合优化"""
-    
+
     print("=== 阶段1: 几何参数优化===")
     second_optimized = optimize_primitives(
         primitives, grid, target_img, output_dir,
-        steps=500, lr=0.001
+        steps=500, lr=0.01
     )
     print("=== 阶段2: 交点优化 ===")
     fully_optimized = optimize_edge(
@@ -1050,7 +1116,7 @@ def staged_optimization(primitives, grid, target_img, output_dir):
 
 def to_params(primitives):
     """将图元转换为可优化参数"""
-    params ,params_type = [], []
+    params, params_type = [], []
     for prim in primitives:
         # 对颜色应用logit变换确保在(0,1)范围内
         color_clipped = jnp.clip(prim.color, 0.01, 0.99)
@@ -1077,7 +1143,7 @@ def to_params(primitives):
             params_type.append('1')
         elif isinstance(prim, Triangle):
             round_log = prim.round
-          
+
             params.append({
                 'center': prim.center,
                 'radius': prim.radius,
@@ -1088,11 +1154,21 @@ def to_params(primitives):
             })
             params_type.append('2')
         elif isinstance(prim, Capsule):
-            radius_log = jnp.log(jnp.maximum(prim.radius, 0))  # 对数变换，确保参数空间无约束
+            # a=jnp.maximum(prim.a,1e-6)
+            # a = jnp.maximum(prim.a, 1e-12)  # 对数变换，确保参数空间无约束
             round_log = jnp.log(jnp.maximum(prim.round, 0))
+            # params.append({
+            #     'center': prim.center,
+            #     'radius': radius_log,
+            #     'rotate_theta': prim.rotate_theta,
+            #     'round': round_log,
+            #     'color': color_logit,
+            #     'depth': prim.depth
+            # })
             params.append({
                 'center': prim.center,
-                'radius': radius_log,
+                'length': prim.length,
+                'a': prim.a,
                 'rotate_theta': prim.rotate_theta,
                 'round': round_log,
                 'color': color_logit,
@@ -1148,27 +1224,27 @@ def to_params(primitives):
             })
             params_type.append('7')
 
-    return params,params_type
+    return params, params_type
 
 
-def from_params(params,params_type):
+def from_params(params, params_type):
     """将参数转换回图元"""
     prims = []
     for param, type_name in zip(params, params_type):
         # 应用sigmoid确保颜色在(0,1)范围内
         color = 1 / (1 + jnp.exp(-param['color']))
 
-        if type_name=='0':  # 圆形
+        if type_name == '0':  # 圆形
             prims.append(Circle(
                 param['center'],
                 param['radius'],
                 color,
                 param['depth']
             ))
-        elif type_name=='1':  # 矩形
+        elif type_name == '1':  # 矩形
             round = param['round']
             round = jnp.minimum(round, jnp.min(param['size']) / 2)
-            
+
             prims.append(Rectangle(
                 param['center'],
                 param['size'],
@@ -1177,10 +1253,10 @@ def from_params(params,params_type):
                 color,
                 param['depth']
             ))
-        elif type_name=='2':  # 三角形
+        elif type_name == '2':  # 三角形
             round = param['round']
-            depth=param['depth']
-           
+            depth = param['depth']
+
             prims.append(Triangle(
                 param['center'],
                 param['radius'],
@@ -1190,11 +1266,22 @@ def from_params(params,params_type):
                 depth
             ))
         elif type_name == '3':
-            radius = jnp.exp(param['radius'])  # 指数变换，确保为正
+            # a = jnp.exp(param['a'])  # 指数变换，确保为正
             round = jnp.exp(param['round'])
+            # a = jnp.exp(param['a'])  # 指数函数确保a始终为正
+            # a = jnp.clip(param['a'], 0, 10.0)
+            # prims.append(Capsule(
+            #     param['center'],
+            #     radius,
+            #     param['rotate_theta'],
+            #     round,
+            #     color,
+            #     param['depth']
+            # ))
             prims.append(Capsule(
                 param['center'],
-                radius,
+                param['length'],
+                param['a'],
                 param['rotate_theta'],
                 round,
                 color,
@@ -1225,8 +1312,8 @@ def from_params(params,params_type):
                 param['depth']
             ))
         elif type_name == '6':
-            round = jnp.maximum(param['round'],0.0)  # 指数变换（实数→正值）
-            k = jnp.maximum(param['k'],0.001)
+            round = jnp.maximum(param['round'], 0.0)  # 指数变换（实数→正值）
+            k = jnp.maximum(param['k'], 0.001)
             prims.append(Star(
                 param['center'],
                 param['radius'],
@@ -1248,24 +1335,46 @@ def from_params(params,params_type):
             ))
     return prims
 
+
+def create_optimizer(lr, decay_rate=0.95, decay_steps=100):
+    # 定义学习率调度器（指数衰减）
+    learning_rate_schedule = optax.exponential_decay(
+        init_value=lr,  # 初始学习率
+        transition_steps=decay_steps,  # 每多少步衰减一次
+        decay_rate=decay_rate,  # 衰减率（如0.99表示每次衰减1%）
+        staircase=False  # 是否阶梯式衰减（False为连续衰减）
+    )
+
+    # 组合优化器：梯度裁剪 + 带学习率衰减的Adam
+    optimizer = optax.chain(
+        optax.clip_by_global_norm(1.0),  # 梯度裁剪
+        optax.adam(learning_rate=learning_rate_schedule)  # 使用调度器
+    )
+    return optimizer
+
+
 # ==============================
 # 优化函数 - 添加梯度裁剪和参数约束
 # ==============================
 def optimize_primitives(primitives, grid, target_img, output, steps, lr):
     """优化图元参数匹配目标图像"""
     params, params_type = to_params(primitives)
-    def run_single_optimization(params, params_type, grid, target_img, output, steps, lr,softness):
+
+    def run_single_optimization(params, params_type, grid, target_img, output, steps, lr, softness):
 
         optimization_frames_file = os.path.join(output, "optimization_frames")
         frame_count = 0
+
         # 渲染函数
         def render(prims):
-            return differentiable_rasterize(prims, grid,softness)
+            return differentiable_rasterize(prims, grid, softness)
+
         # 初始化优化器 - 添加梯度裁剪
-        optimizer = optax.chain(
-            optax.clip_by_global_norm(1.0),  # 梯度裁剪
-            optax.adam(lr)
-        )
+        # optimizer = optax.chain(
+        #     optax.clip_by_global_norm(1.0),  # 梯度裁剪
+        #     optax.adam(lr)
+        # )
+        optimizer = create_optimizer(lr=lr, decay_rate=0.99, decay_steps=100)
         opt_state = optimizer.init(params)
 
         @jit
@@ -1286,16 +1395,37 @@ def optimize_primitives(primitives, grid, target_img, output, steps, lr):
         def update(params, opt_state):
             loss_val, grads = jax.value_and_grad(loss_fn)(params)
 
-            def freeze_geometry_grad(grad_dict):
+            def freeze_geometry_grad(grad_dict, prim_type):
                 frozen_grad = {}
                 for k, v in grad_dict.items():
                     if k in ['color', 'depth']:
                         frozen_grad[k] = jnp.zeros_like(v)
+                    # # 弯曲胶囊的 'a' 参数梯度缩放
+                    elif prim_type == '3' and k == 'a':
+                        frozen_grad[k] = v * 1e-6  # 同样缩小梯度
+                    elif prim_type == '3' and k == 'round':
+                        frozen_grad[k] = jnp.zeros_like(v)
+                    elif prim_type == '3' and k == 'center':
+                        frozen_grad[k] = v * 10
                     else:
                         frozen_grad[k] = v
                 return frozen_grad
 
-            grads = [freeze_geometry_grad(g) for g in grads]
+            grads = [freeze_geometry_grad(grads[i], params_type[i]) for i in range(len(grads))]
+            # def normalize_grad(grad_dict,prim_type):
+            #     normalized_grad = {}
+            #     for k, v in grad_dict.items():
+            #         # 只对指定的参数类型进行标准化
+            #         if prim_type == '3':
+            #             if k=='a':
+            #                 normalized_grad[k] = v
+            #             else:
+            #                 grad_norm = jnp.linalg.norm(v) + 1e-8  # 避免除以零
+            #                 normalized_grad[k] = v / grad_norm
+            #         else:
+            #             normalized_grad[k] = v
+            #     return normalized_grad
+            # grads=[normalize_grad(grads[i], params_type[i]) for i in range(len(grads))]
             updates, opt_state = optimizer.update(grads, opt_state)
             params = optax.apply_updates(params, updates)
             return params, opt_state, loss_val, grads
@@ -1312,7 +1442,7 @@ def optimize_primitives(primitives, grid, target_img, output, steps, lr):
         grad_history = []  # 用于记录梯度历史
 
         print("开始优化...")
-        success=True
+        success = True
         for step in range(steps):
 
             prev_params = params.copy()
@@ -1327,14 +1457,13 @@ def optimize_primitives(primitives, grid, target_img, output, steps, lr):
             if jnp.isnan(loss_val):
                 print(f"Step {step} 检测到NaN值，恢复上一轮参数")
                 success = False
-                return success,from_params(prev_params, params_type)
-
+                return success, from_params(prev_params, params_type)
 
             for i, param in enumerate(params):
                 for k, v in param.items():
                     if jnp.any(jnp.isnan(v)) or jnp.any(jnp.isinf(v)):
                         success = False
-                        return success,from_params(prev_params, params_type)
+                        return success, from_params(prev_params, params_type)
 
             if step % 100 == 0 or step == steps - 1:
                 print(f"Step {step}, Loss: {loss_val:.6f}, total grads: {optax.global_norm(grads):.6f}")
@@ -1343,13 +1472,14 @@ def optimize_primitives(primitives, grid, target_img, output, steps, lr):
 
                 current_img = np.array(render(current_prims) * 255)
                 current_img = current_img.astype(np.uint8)
-                Image.fromarray(current_img).save(os.path.join(optimization_frames_file, f"frame_{frame_count:04d}.png"))
+                Image.fromarray(current_img).save(
+                    os.path.join(optimization_frames_file, f"frame_{frame_count:04d}.png"))
                 frame_count += 1
                 step_grads = []
                 # 新增：遍历每个图元的梯度
                 for i, prim_grad in enumerate(grads):
                     grad_info = {}
-                    # print(f"图元 {i}:")
+                    print(f"图元 {i}:")
                     for param_name, g in prim_grad.items():
                         # 计算梯度的L2范数和最大值
                         g_flat = jnp.ravel(g)
@@ -1361,7 +1491,7 @@ def optimize_primitives(primitives, grid, target_img, output, steps, lr):
                             'norm': jax.device_get(grad_norm),
                             'max': jax.device_get(grad_max)
                         }
-                    # print(f"grad_info: {grad_info}")
+                    print(f"grad_info: {grad_info}")
                     step_grads.append(grad_info)
                 grad_history.append(step_grads)
                 # 检查NaN值
@@ -1393,35 +1523,37 @@ def optimize_primitives(primitives, grid, target_img, output, steps, lr):
         # create_animation(optimization_frames_file)
 
         print("优化完成!")
-        return success,optimized_primitives
+        return success, optimized_primitives
 
     softness_schedule = [150, 100]  # 逐步降低softness
     for softness in softness_schedule:
         print('softness:', softness)
-        success,result = run_single_optimization(
-            params,params_type,grid, target_img, output, steps, lr, softness
+        success, result = run_single_optimization(
+            params, params_type, grid, target_img, output, steps, lr, softness
         )
         if success:
             return result
     return from_params(params, params_type)
+
 
 def optimize_edge(primitives, grid, target_img, output, steps=500, lr=0.01):
     # 渲染函数
     def render(prims):
         return differentiable_rasterize(prims, grid)
 
-    params,params_type = to_params(primitives)
+    params, params_type = to_params(primitives)
 
     # 初始化优化器 - 添加梯度裁剪
-    optimizer = optax.chain(
-        optax.clip_by_global_norm(1.0),  # 梯度裁剪
-        optax.adam(lr)
-    )
+    # optimizer = optax.chain(
+    #     optax.clip_by_global_norm(1.0),  # 梯度裁剪
+    #     optax.adam(lr)
+    # )
+    optimizer = create_optimizer(lr=lr, decay_rate=0.99, decay_steps=100)
     opt_state = optimizer.init(params)
 
     @jit
     def loss_fn(params):
-        prims = from_params(params,params_type)
+        prims = from_params(params, params_type)
         rendered = render(prims)
         # 只比较RGB通道
         target_rgb = target_img[..., :3]
@@ -1431,24 +1563,46 @@ def optimize_edge(primitives, grid, target_img, output, steps=500, lr=0.01):
         # 添加边缘一致性损失
         edge_loss = edge_consistency_loss(rendered_rgb, target_rgb)
         inter_loss = intersection_aware_loss(primitives, grid, target_rgb, rendered_rgb)
-        return mse_loss+edge_loss+inter_loss
+        return mse_loss + edge_loss + inter_loss
 
     @jit
     def update(params, opt_state):
         loss_val, grads = jax.value_and_grad(loss_fn)(params)
 
         # 冻结颜色和深度梯度
-        def freeze_geometry_grad(grad_dict):
+        def freeze_geometry_grad(grad_dict, prim_type):
             frozen_grad = {}
             for k, v in grad_dict.items():
-                if k in ['color','depth']:
-                    frozen_grad[k] = jnp.zeros_like(v)  
-
+                if k in ['color', 'depth']:
+                    frozen_grad[k] = jnp.zeros_like(v)
+                # # 弯曲胶囊的 'a' 参数梯度缩放
+                elif prim_type == '3' and k == 'a':
+                    frozen_grad[k] = v * 1e-8  # 同样缩小梯度
+                elif prim_type == '3' and k == 'round':
+                    frozen_grad[k] = v * 1e-7
+                elif prim_type == '3' and k == 'center':
+                    frozen_grad[k] = v * 1e5
                 else:
                     frozen_grad[k] = v
             return frozen_grad
 
-        grads = [freeze_geometry_grad(g) for g in grads]
+        grads = [freeze_geometry_grad(grads[i], params_type[i]) for i in range(len(grads))]
+
+        # def normalize_grad(grad_dict, prim_type):
+        #     normalized_grad = {}
+        #     for k, v in grad_dict.items():
+        #         # 只对指定的参数类型进行标准化
+        #         if prim_type == '3':
+        #             if k == 'a':
+        #                 normalized_grad[k] = v
+        #             else:
+        #                 grad_norm = jnp.linalg.norm(v) + 1e-8  # 避免除以零
+        #                 normalized_grad[k] = v / grad_norm
+        #         else:
+        #             normalized_grad[k] = v
+        #     return normalized_grad
+        #
+        # grads = [normalize_grad(grads[i], params_type[i]) for i in range(len(grads))]
         updates, opt_state = optimizer.update(grads, opt_state)
         params = optax.apply_updates(params, updates)
         return params, opt_state, loss_val, grads
@@ -1480,7 +1634,7 @@ def optimize_edge(primitives, grid, target_img, output, steps=500, lr=0.01):
 
             return from_params(prev_params, params_type)
         # 检查参数是否包含NaN
-       
+
         for i, param in enumerate(params):
             for k, v in param.items():
                 if jnp.any(jnp.isnan(v)) or jnp.any(jnp.isinf(v)):
@@ -1488,8 +1642,8 @@ def optimize_edge(primitives, grid, target_img, output, steps=500, lr=0.01):
 
         if step % 100 == 0 or step == steps - 1:
             print(f"Step {step}, Loss: {loss_val:.6f}, total grads: {optax.global_norm(grads):.6f}")
-           
-            current_prims = from_params(params,params_type)
+
+            current_prims = from_params(params, params_type)
             current_img = np.array(render(current_prims) * 255)
             current_img = current_img.astype(np.uint8)
             Image.fromarray(current_img).save(os.path.join(optimization_frames_file, f"frame_{frame_count:04d}.png"))
@@ -1571,7 +1725,7 @@ def optimized_differentiable_rasterize(primitives, grid, softness=100, threshold
 
     # 4. 按深度顺序绘制图元（从远到近）
     for i in range(len(primitives)):
-        prim=primitives[i]
+        prim = primitives[i]
         # 计算当前图元的SDF（判断像素是否在图元内部）
         if isinstance(prim, Circle):
             sdf = Circle_sdf(prim.center, prim.radius, points)
@@ -1580,7 +1734,7 @@ def optimized_differentiable_rasterize(primitives, grid, softness=100, threshold
         elif isinstance(prim, Triangle):
             sdf = triangle_sdf(prim.center, prim.radius, prim.rotate_theta, prim.round, points)
         elif isinstance(prim, Capsule):
-            sdf = capsule_sdf(prim.center, prim.radius, prim.rotate_theta, prim.round, points)
+            sdf = curved_capsule_sdf(prim.center, prim.length, prim.a, prim.rotate_theta, prim.round, points)
         elif isinstance(prim, Arc):
             sdf = arc_sdf(prim.center, prim.shape_theta, prim.rotate_theta, prim.radius, prim.round, points)
         elif isinstance(prim, Trapezoid):
@@ -1593,11 +1747,11 @@ def optimized_differentiable_rasterize(primitives, grid, softness=100, threshold
         # SDF <= 0 表示像素在图元内部（不透明，完全覆盖）
         sdf_clamped = jnp.clip(sdf, -50.0, 50.0)
 
-        inside_prim = sdf_clamped  <= 0   # [N]，True=像素在图元内
+        inside_prim = sdf_clamped <= 0  # [N]，True=像素在图元内
 
         # # 仅覆盖未被更近图元占据的像素（未覆盖区域）
         # # 逻辑：当前像素在图元内，且未被之前的图元覆盖
-        update_mask = inside_prim # [N]
+        update_mask = inside_prim  # [N]
         #
         # # 对图元颜色进行阈值处理（接近0设为0，接近1设为1）
         prim_rgb = base_colors[i]  # [3]
@@ -1606,7 +1760,6 @@ def optimized_differentiable_rasterize(primitives, grid, softness=100, threshold
             1.0,
             0.0
         )
-
 
         # 更新画布：仅在update_mask为True的位置填充当前图元颜色
         output_rgb = jnp.where(
@@ -1623,6 +1776,7 @@ def optimized_differentiable_rasterize(primitives, grid, softness=100, threshold
     rgba_image = rgba.reshape(H, W, 4)
 
     return rgba_image
+
 
 # ==============================
 # 主函数
@@ -1670,7 +1824,7 @@ def main(target_image_path, init_params_path, output_dir):
 
     # 渲染函数
     def render(prims):
-        prims=sorted(prims, key=lambda p: p.depth)
+        prims = sorted(prims, key=lambda p: p.depth)
         return differentiable_rasterize(prims, grid)
 
     initial_params_path = output_dir / "initial_params.txt"
@@ -1691,9 +1845,9 @@ def main(target_image_path, init_params_path, output_dir):
     optimized_params_path = output_dir / "optimized_params.txt"
     save_parameters(str(optimized_params_path), optimized_primitives, height, width)
     print(f"优化后的参数已保存至: {optimized_params_path}")
-    
+
     optimized_primitives = sorted(optimized_primitives, key=lambda p: p.depth)
- 
+
     optimized_img = optimized_differentiable_rasterize(optimized_primitives, grid, softness=100.0)
     optimized_img_path = output_dir / "optimized_image.png"
     iio.imwrite(str(optimized_img_path), (optimized_img * 255).astype(np.uint8))
@@ -1716,13 +1870,12 @@ def main(target_image_path, init_params_path, output_dir):
     plt.tight_layout()
     plt.savefig(str(output_dir / "comparison.png"), dpi=150)
     print(f"对比图像已保存至: {output_dir / 'comparison.png'}")
-  
+
 
 if __name__ == "__main__":
-
-    name = "book_closed_right_left_badge_plus"
+    name = "face_sculpt"
     target_image_path = "images/" + name + ".png"
     target_params_path = "infos/" + name + ".json"
-    output = "output/20250807/统一测试/20250807_" + name
+    output = "output/20250814/test_" + name
     main(target_image_path, target_params_path, output)
-    
+
