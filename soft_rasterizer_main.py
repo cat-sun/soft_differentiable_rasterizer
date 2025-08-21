@@ -489,53 +489,72 @@ def arc_sdf(center, shape_theta, rotate_theta, radius, round_radius, points):
     sdf = jnp.where(mask, d2, d1)
     return sdf
 
+def smoothstep(edge0, edge1, x):
+    """JAX版本的平滑阶梯函数，与原PyTorch逻辑一致"""
+    t = jnp.clip((x - edge0) / (edge1 - edge0), 0.0, 1.0)
+    return t * t * (3.0 - 2.0 * t)
 
 def curved_capsule_sdf(center, length, a, rotate_theta, round_param, points):
-    """
-    计算弧形边胶囊的SDF
+    cx, cy = center
+    # --- 角度修正 ---
+    theta = (rotate_theta - jnp.pi / 2) % (jnp.pi * 2)
 
-    参数:
-    (x,y)一个端点的坐标，length:胶囊长度，a：胶囊弯曲程度，rotate_theta：旋转角度，round_param：胶囊粗度。
-    """
-
-    x, y = center
-    # 统一坐标格式为 (2, N)
+    # --- 坐标变换 ---
     if points.shape[0] != 2:
-        points = points.T  # 转换为 (2, N) 方便矩阵运算
-    # 旋转矩阵计算
-    cos_theta = jnp.cos(rotate_theta)
-    sin_theta = jnp.sin(rotate_theta)
-    rotateMat = jnp.array([[cos_theta, -sin_theta],
-                           [sin_theta, cos_theta]])
-    # 平移向量（适配 JAX 数组操作）
-    translation = jnp.array([x, y]).reshape(2, 1)
+        points = points.T  # (2, N)
+    cos_theta = jnp.cos(theta)
+    sin_theta = jnp.sin(theta)
+    R = jnp.array([[cos_theta, -sin_theta],
+                   [sin_theta, cos_theta]])
+    translation = jnp.array([cx, cy]).reshape(2, 1)
+    p = R.T @ (points - translation)
+    px, py = p[0, :], p[1, :]
 
-    # 坐标变换（JAX 中矩阵乘法使用 @ 运算符）
-    p = rotateMat.T @ points - rotateMat.T @ translation
-    # a = jnp.maximum(a, 1e-12)
-    # 计算 sin(a) 和 cos(a)
-    a_val = jnp.array(a, dtype=points.dtype)
-    sc = jnp.array([jnp.sin(a_val), jnp.cos(a_val)], dtype=points.dtype)
-    ra = 0.5 * length / a
-    p = p.at[0].add(-ra)  # 替代 p[0] -= ra 的 in-place 操作
+    # ---- 线段SDF ----
+    clamped_x = jnp.clip(px, -length, length)
+    d_line = jnp.sqrt((px - clamped_x) ** 2 + py ** 2 + 1e-12)
 
-    # 点积计算
-    dot_sp = sc[0] * p[0] + sc[1] * p[1]
-    dot_clamped = jnp.clip(dot_sp, a_min=0.0)
+    # ---- 曲率方向和大小 ----
+    eps1 = 1e-6
+    # abs_a = jnp.clip(jnp.abs(a), eps1)  # 曲率大小
+    abs_a = jnp.sqrt(a * a + eps1)
+    sign_a = jnp.where(a >= 0, 1.0, -1.0)  # 曲率方向
 
-    # 向量运算
-    q = p - 2.0 * sc[:, jnp.newaxis] * dot_clamped
-    q_len = jnp.sqrt(q[0] ** 2 + q[1] ** 2)
-    u = jnp.abs(ra) - q_len
+    # ---- 圆弧参数 ----
+    scx = jnp.cos(abs_a / 2.0)
+    scy = jnp.sin(abs_a / 2.0)
+    ra = jnp.clip(length / abs_a, 0.0, 1e3)  # 半径
 
-    # 条件判断（使用 JAX 的 where 函数）
-    cond = q[1] < 0.0
-    q_plus = q + jnp.array([[ra], [0.0]], dtype=points.dtype)
-    len_q_plus = jnp.sqrt(q_plus[0] ** 2 + q_plus[1] ** 2)
-    # normalized_len = len_q_plus * (0.5*length / jnp.abs(ra))  # 抵消ra变化的影响
-    d = jnp.where(cond, len_q_plus, jnp.abs(u))
+    # ---- 圆弧中心下移（方向依赖 sign_a）----
+    py2 = py - sign_a * ra
+    px2 = jnp.abs(px)
 
-    # 计算最终 SDF 并重塑形状
+    # ---- 反射计算 ----
+    dot_sp = scx * px2 + sign_a * scy * py2
+    m = jnp.clip(dot_sp, a_min=0.0)
+    qx = px2 - 2.0 * scx * m
+    qy = py2 - 2.0 * sign_a * scy * m
+
+    # ---- 圆弧距离 ----
+    qlen = jnp.sqrt(qx ** 2 + qy ** 2)
+    u = jnp.abs(ra) - qlen
+    d_arc_left = jnp.sqrt(qx ** 2 + (qy + sign_a * ra) ** 2 + 1e-12)
+    d_arc = jnp.where(qx < 0.0, d_arc_left, jnp.abs(u))
+
+    # ---- 平滑过渡权重 ----
+    a_abs = jnp.abs(a)
+    curvature_based_eps = 0.1 * (length / (round_param + 1e-8))
+    curvature_based_eps = jnp.clip(curvature_based_eps, 1e-3, 1e-1)
+    transition_center = curvature_based_eps
+    transition_width = curvature_based_eps * 0.2
+    transition_center = 1e-3  # 固定很小
+    transition_width = 5e-4
+    x = (a_abs - transition_center) / (transition_width + 1e-8)
+    k = 0.5 * (jnp.tanh(x) + 1.0)
+    k = jnp.clip(k, 0.0, 1.0)
+
+    # ---- 融合线段和圆弧 ----
+    d = (1.0 - k) * d_line + k * d_arc
     sdf = d - round_param
     return sdf
 
@@ -1103,7 +1122,7 @@ def staged_optimization(primitives, grid, target_img, output_dir):
     print("=== 阶段1: 几何参数优化===")
     second_optimized = optimize_primitives(
         primitives, grid, target_img, output_dir,
-        steps=500, lr=0.01
+        steps=500, lr=0.001
     )
     print("=== 阶段2: 交点优化 ===")
     fully_optimized = optimize_edge(
@@ -1402,30 +1421,17 @@ def optimize_primitives(primitives, grid, target_img, output, steps, lr):
                         frozen_grad[k] = jnp.zeros_like(v)
                     # # 弯曲胶囊的 'a' 参数梯度缩放
                     elif prim_type == '3' and k == 'a':
-                        frozen_grad[k] = v * 1e-6  # 同样缩小梯度
+                        frozen_grad[k] = v * 1e-5  # 同样缩小梯度
                     elif prim_type == '3' and k == 'round':
                         frozen_grad[k] = jnp.zeros_like(v)
-                    elif prim_type == '3' and k == 'center':
-                        frozen_grad[k] = v * 10
+
                     else:
                         frozen_grad[k] = v
+
                 return frozen_grad
 
             grads = [freeze_geometry_grad(grads[i], params_type[i]) for i in range(len(grads))]
-            # def normalize_grad(grad_dict,prim_type):
-            #     normalized_grad = {}
-            #     for k, v in grad_dict.items():
-            #         # 只对指定的参数类型进行标准化
-            #         if prim_type == '3':
-            #             if k=='a':
-            #                 normalized_grad[k] = v
-            #             else:
-            #                 grad_norm = jnp.linalg.norm(v) + 1e-8  # 避免除以零
-            #                 normalized_grad[k] = v / grad_norm
-            #         else:
-            #             normalized_grad[k] = v
-            #     return normalized_grad
-            # grads=[normalize_grad(grads[i], params_type[i]) for i in range(len(grads))]
+
             updates, opt_state = optimizer.update(grads, opt_state)
             params = optax.apply_updates(params, updates)
             return params, opt_state, loss_val, grads
@@ -1577,32 +1583,15 @@ def optimize_edge(primitives, grid, target_img, output, steps=500, lr=0.01):
                     frozen_grad[k] = jnp.zeros_like(v)
                 # # 弯曲胶囊的 'a' 参数梯度缩放
                 elif prim_type == '3' and k == 'a':
-                    frozen_grad[k] = v * 1e-8  # 同样缩小梯度
+                    frozen_grad[k] = v * 1e-7  # 同样缩小梯度
                 elif prim_type == '3' and k == 'round':
-                    frozen_grad[k] = v * 1e-7
-                elif prim_type == '3' and k == 'center':
-                    frozen_grad[k] = v * 1e5
+                    frozen_grad[k] = v * 1e-8
+
                 else:
                     frozen_grad[k] = v
             return frozen_grad
 
         grads = [freeze_geometry_grad(grads[i], params_type[i]) for i in range(len(grads))]
-
-        # def normalize_grad(grad_dict, prim_type):
-        #     normalized_grad = {}
-        #     for k, v in grad_dict.items():
-        #         # 只对指定的参数类型进行标准化
-        #         if prim_type == '3':
-        #             if k == 'a':
-        #                 normalized_grad[k] = v
-        #             else:
-        #                 grad_norm = jnp.linalg.norm(v) + 1e-8  # 避免除以零
-        #                 normalized_grad[k] = v / grad_norm
-        #         else:
-        #             normalized_grad[k] = v
-        #     return normalized_grad
-        #
-        # grads = [normalize_grad(grads[i], params_type[i]) for i in range(len(grads))]
         updates, opt_state = optimizer.update(grads, opt_state)
         params = optax.apply_updates(params, updates)
         return params, opt_state, loss_val, grads
@@ -1873,9 +1862,9 @@ def main(target_image_path, init_params_path, output_dir):
 
 
 if __name__ == "__main__":
-    name = "face_sculpt"
+    name = "star"
     target_image_path = "images/" + name + ".png"
     target_params_path = "infos/" + name + ".json"
-    output = "output/20250814/test_" + name
+    output = "output/20250820/" + name
     main(target_image_path, target_params_path, output)
 
