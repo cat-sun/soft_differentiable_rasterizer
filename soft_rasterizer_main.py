@@ -62,17 +62,17 @@ class Rectangle:
     center: jnp.ndarray  # [x, y] (归一化坐标系)
     size: jnp.ndarray  # [width, height] (归一化单位)
     rotate_theta: jnp.ndarray  # 弧
-    round: jnp.ndarray  # 圆角半径（归一化单位）
+    round_param: jnp.ndarray  # 圆角半径（归一化单位）
     color: jnp.ndarray  # [r, g, b, a]
     depth: jnp.ndarray  # 深度值，可优化
 
 
 @dataclass
-class Triangle:
+class EquilateralTriangle:
     center: jnp.ndarray  # [x, y] (归一化坐标系)
-    radius: jnp.ndarray  # [width, height] (归一化单位)
+    radius: jnp.ndarray
     rotate_theta: jnp.ndarray
-    round: jnp.ndarray  # 圆角半径（归一化单位）
+    round_param: jnp.ndarray  # 圆角半径（归一化单位）
     color: jnp.ndarray  # [r, g, b, a]
     depth: jnp.ndarray  # 深度值，可优化
 
@@ -83,26 +83,17 @@ class Arc:
     shape_theta: jnp.ndarray  # 圆弧的角度范围（弧度）
     rotate_theta: jnp.ndarray
     radius: jnp.ndarray  # 标量 (归一化单位)
-    round: jnp.ndarray  # 圆弧圆角半径
+    round_param: jnp.ndarray  # 圆弧圆角半径
     color: jnp.ndarray  # [r, g, b, a]
     depth: jnp.ndarray  # 深度值，可优化
 
-
-# @dataclass
-# class Capsule:
-#     center: jnp.ndarray  # [x, y] (归一化坐标系) 胶囊中心点坐标
-#     radius: jnp.ndarray  # 胶囊线段部分的长度
-#     rotate_theta: jnp.ndarray  # 旋转角度
-#     round: jnp.ndarray  # 胶囊的宽度
-#     color: jnp.ndarray
-#     depth: jnp.ndarray  # 深度值，可优化
 @dataclass
 class Capsule:
     center: jnp.ndarray  # [x, y] (归一化坐标系) 胶囊中心点坐标
     length: jnp.ndarray  # 胶囊线段部分的长度
     a: jnp.ndarray  # 胶囊弯曲程度
     rotate_theta: jnp.ndarray  # 旋转角度
-    round: jnp.ndarray  # 胶囊的宽度
+    round_param: jnp.ndarray  # 胶囊的宽度
     color: jnp.ndarray
     depth: jnp.ndarray  # 深度值，可优化
 
@@ -114,7 +105,7 @@ class Trapezoid:
     width2: jnp.ndarray  # 顶宽
     height: jnp.ndarray  # 高
     rotate_theta: jnp.ndarray
-    round: jnp.ndarray  # 圆角半径（归一化单位）
+    round_param: jnp.ndarray  # 圆角半径（归一化单位）
     color: jnp.ndarray  # [r, g, b, a]
     depth: jnp.ndarray  # 深度值，可优化
 
@@ -125,7 +116,7 @@ class Star:
     radius: jnp.ndarray  # 从五角星中心到其顶点（最尖端）的距离
     theta: jnp.ndarray  # 控制星形边角的尖锐程度，控制内半径比例（星尖到凹谷的距离比例）
     external_angle: jnp.ndarray  # 边角圆角半径,控制五角星角圆润程度
-    round: jnp.ndarray  # 调整星形轮廓的形状参数，控制星形 “凸起程度” 与 “凹陷深度”
+    round_param: jnp.ndarray  # 调整星形轮廓的形状参数，控制星形 “凸起程度” 与 “凹陷深度”
     k: jnp.ndarray  # 旋转角度（弧度）
     color: jnp.ndarray  # [r, g, b, a]
     depth: jnp.ndarray  # 深度值，可优化
@@ -136,7 +127,17 @@ class halfCircle:
     center: jnp.ndarray  # [x, y] (归一化坐标系)
     radius: jnp.ndarray  # 标量 (归一化单位)
     rotate_theta: jnp.ndarray
-    round: jnp.ndarray
+    round_param: jnp.ndarray
+    color: jnp.ndarray  # [r, g, b, a]
+    depth: jnp.ndarray  # 深度值，可优化
+
+@dataclass
+class IsoscelesTriangle:
+    center: jnp.ndarray  # [x, y] (归一化坐标系)
+    width: jnp.ndarray
+    height: jnp.ndarray
+    rotate_theta: jnp.ndarray
+    round_param: jnp.ndarray  # 圆角半径（归一化单位）
     color: jnp.ndarray  # [r, g, b, a]
     depth: jnp.ndarray  # 深度值，可优化
 
@@ -150,49 +151,50 @@ tree_util.register_pytree_node(
 
 tree_util.register_pytree_node(
     Rectangle,
-    lambda r: ((r.center, r.size, r.rotate_theta, r.round, r.color, r.depth), None),
+    lambda r: ((r.center, r.size, r.rotate_theta, r.round_param, r.color, r.depth), None),
     lambda _, data: Rectangle(*data)
 )
 tree_util.register_pytree_node(
-    Triangle,
-    lambda r: ((r.center, r.radius, r.rotate_theta, r.round, r.color, r.depth), None),
-    lambda _, data: Triangle(*data)
+    IsoscelesTriangle,
+    lambda r: ((r.center, r.radius, r.rotate_theta, r.round_param, r.color, r.depth), None),
+    lambda _, data: IsoscelesTriangle(*data)
 )
 
 tree_util.register_pytree_node(
     Arc,
-    lambda c: ((c.center, c.shape_theta, c.rotate_theta, c.radius, c.round, c.color, c.depth), None),
+    lambda c: ((c.center, c.shape_theta, c.rotate_theta, c.radius, c.round_param, c.color, c.depth), None),
     lambda _, data: Arc(*data)
 )
-# tree_util.register_pytree_node(
-#     Capsule,
-#     lambda c: ((c.center,c.radius,c.rotate_theta, c.round,c.color,c.depth), None),
-#     lambda _, data: Capsule(*data)
-# )
+
 tree_util.register_pytree_node(
     Capsule,
-    lambda c: ((c.center, c.length, c.a, c.rotate_theta, c.round, c.color, c.depth), None),
+    lambda c: ((c.center, c.length, c.a, c.rotate_theta, c.round_param, c.color, c.depth), None),
     lambda _, data: Capsule(*data)
 )
 
 tree_util.register_pytree_node(
     Trapezoid,
-    lambda c: ((c.center, c.bottom_width, c.top_width, c.height, c.round_radius, c.rotate_theta, c.color, c.depth),
+    lambda c: ((c.center, c.bottom_width, c.top_width, c.height, c.round_param_radius, c.rotate_theta, c.color, c.depth),
                None),
     lambda _, data: Trapezoid(*data)
 )
 tree_util.register_pytree_node(
     Star,
-    lambda s: ((s.center, s.radius, s.theta, s.external_angle, s.round, s.k, s.color, s.depth), None),
+    lambda s: ((s.center, s.radius, s.theta, s.external_angle, s.round_param, s.k, s.color, s.depth), None),
     lambda _, data: Star(*data)
 )
 
 tree_util.register_pytree_node(
     halfCircle,
-    lambda c: ((c.center, c.radius, c.rotate_theta, c.round, c.color, c.depth), None),
+    lambda c: ((c.center, c.radius, c.rotate_theta, c.round_param, c.color, c.depth), None),
     lambda _, data: halfCircle(*data)
 )
 
+tree_util.register_pytree_node(
+    EquilateralTriangle,
+    lambda r: ((r.center, r.width, r.height, r.rotate_theta, r.round_param, r.color, r.depth), None),
+    lambda _, data: EquilateralTriangle(*data)
+)
 
 # ==============================
 # 符号距离函数 (SDF) - 在归一化坐标系中
@@ -262,7 +264,7 @@ def halfCircle_sdf(center, radius, rotate_theta, cut_offset, points):
     return jax.lax.cond(is_valid, compute_valid_sdf, invalid_sdf)
 
 
-def rectangle_sdf(center, size, rotate_theta, round, points):
+def rectangle_sdf(center, size, rotate_theta, round_param, points):
     """
     计算旋转圆角矩形的有符号距离场(SDF)
 
@@ -270,7 +272,7 @@ def rectangle_sdf(center, size, rotate_theta, round, points):
         center: 矩形中心坐标 [cx, cy]
         size: 矩形尺寸 [width, height]
         rotate_theta: 旋转角度(弧度)
-        round: 圆角半径
+        round_param: 圆角半径
         points: 要计算的点集, shape=(N,2)
 
     返回:
@@ -296,8 +298,8 @@ def rectangle_sdf(center, size, rotate_theta, round, points):
         new_coords = translated @ rotate_mat  # 应用旋转 (N, 2) @ (2, 2) = (N, 2)
 
         # 5. 计算到矩形边界的距离（含圆角）
-        p0 = jnp.abs(new_coords[:, 0]) - w / 2 + round  # x方向距离 (N,)
-        p1 = jnp.abs(new_coords[:, 1]) - h / 2 + round  # y方向距离 (N,)
+        p0 = jnp.abs(new_coords[:, 0]) - w / 2 + round_param  # x方向距离 (N,)
+        p1 = jnp.abs(new_coords[:, 1]) - h / 2 + round_param  # y方向距离 (N,)
 
         # 6. 计算外部距离（超出矩形的圆角距离）
         q0 = jnp.clip(p0, a_min=0.0)  # (N,)
@@ -308,7 +310,7 @@ def rectangle_sdf(center, size, rotate_theta, round, points):
         inside = jnp.clip(jnp.maximum(p0, p1), a_max=0.0)  # (N,)
 
         # 8. 组合内外距离并应用圆角
-        sdf = outside + inside - round
+        sdf = outside + inside - round_param
         return sdf
 
     def invalid_sdf():
@@ -322,7 +324,7 @@ def rectangle_sdf(center, size, rotate_theta, round, points):
     return jax.lax.cond(is_valid, compute_valid_sdf, invalid_sdf)
 
 
-def triangle_sdf(center, radius, rotate_theta, round, points):
+def equilateral_triangle_sdf(center, radius, rotate_theta, round_param, points):
     x, y = center
     # 计算等边三角形边长（基于外接圆半径）
 
@@ -372,11 +374,11 @@ def triangle_sdf(center, radius, rotate_theta, round, points):
     sdf = -jnp.linalg.norm(jnp.stack([pp0, pp1], axis=0), axis=0) * jnp.sign(pp1)
 
     # 应用圆角处理
-    sdf = sdf - round
+    sdf = sdf - round_param
     return sdf
 
 
-def capsule_sdf(center, radius, rotate_theta, round, points):
+def capsule_sdf(center, radius, rotate_theta, round_param, points):
     """
     计算点集到胶囊形状的有向距离函数
 
@@ -392,11 +394,11 @@ def capsule_sdf(center, radius, rotate_theta, round, points):
     x, y = center
 
     radius = jnp.maximum(radius, 1e-8)  # 避免半径为0导致数值问题
-    length = 2 * round  # 胶囊体线段长度
+    length = 2 * round_param  # 胶囊体线段长度
 
     # 统一坐标格式为 (2, N)
     if points.shape[0] != 2:
-        coords = points.T  # 转换为 (2, N) 方便矩阵运算
+        points = points.T  # 转换为 (2, N) 方便矩阵运算
 
     # 构建旋转矩阵（顺时针为正方向时取负角度）
     cos_theta = jnp.cos(rotate_theta)
@@ -415,7 +417,7 @@ def capsule_sdf(center, radius, rotate_theta, round, points):
     b = endpoints[:, 1:2]  # 终点坐标 (2, 1)
 
     # 计算向量
-    p = coords  # 点集 (2, N)
+    p = points  # 点集 (2, N)
     pa = p - a  # 点到起点的向量 (2, N)
     ba = b - a  # 起点到终点的向量 (2, 1)
 
@@ -431,7 +433,7 @@ def capsule_sdf(center, radius, rotate_theta, round, points):
     return sdf
 
 
-def arc_sdf(center, shape_theta, rotate_theta, radius, round_radius, points):
+def arc_sdf(center, shape_theta, rotate_theta, radius, round_param_radius, points):
     """
     计算两端带相同弧度的圆弧SDF（适配新参数列表）
 
@@ -441,16 +443,16 @@ def arc_sdf(center, shape_theta, rotate_theta, radius, round_radius, points):
     shape_theta: 圆弧张角（弧度）
     rotate_theta: 圆弧旋转角度（弧度）
     radius: 圆弧半径
-    round_radius: 起点和终点的圆角半径（统一值）
+    round_param_radius: 起点和终点的圆角半径（统一值）
     points: 待计算的点集
     """
     x, y = center
     ra = jnp.maximum(radius, 1e-8)  # 避免半径为0导致数值问题
-    rb = jnp.maximum(round_radius, 0.0)  # 确保宽度非负
+    rb = jnp.maximum(round_param_radius, 0.0)  # 确保宽度非负
 
     # 统一坐标格式为 (2, N)
     if points.shape[0] != 2:
-        coords = points.T  # 转换为 (2, N) 方便矩阵运算
+        points = points.T  # 转换为 (2, N) 方便矩阵运算
 
     # 构建旋转矩阵（取转置等价于逆矩阵，实现反向旋转）
     cos_rot = jnp.cos(rotate_theta)
@@ -462,7 +464,7 @@ def arc_sdf(center, shape_theta, rotate_theta, radius, round_radius, points):
     translation = jnp.array([x, y])
 
     # 坐标变换：先旋转再平移（抵消圆弧的旋转和平移，转换到局部坐标系）
-    new_coords = rotate_mat_t @ coords - rotate_mat_t @ translation.reshape(2, 1)
+    new_coords = rotate_mat_t @ points - rotate_mat_t @ translation.reshape(2, 1)
 
     # 提取局部坐标系下的坐标分量（x0取绝对值，对称处理）
     coords0 = jnp.abs(new_coords[0])  # x分量取绝对值
@@ -482,8 +484,8 @@ def arc_sdf(center, shape_theta, rotate_theta, radius, round_radius, points):
     arc_center = (ra * sc).reshape(2, 1)  # 圆角圆心坐标
     dx = coords0 - arc_center[0]  # x方向距离
     dy = coords1 - arc_center[1]  # y方向距离
-    dist_round = jnp.sqrt(dx ** 2 + dy ** 2 + 1e-12)  # 到圆角圆心的距离
-    d2 = dist_round - rb  # 圆角SDF
+    dist_round_param = jnp.sqrt(dx ** 2 + dy ** 2 + 1e-12)  # 到圆角圆心的距离
+    d2 = dist_round_param - rb  # 圆角SDF
 
     # 组合SDF：根据mask选择主体或圆角SDF
     sdf = jnp.where(mask, d2, d1)
@@ -559,7 +561,7 @@ def curved_capsule_sdf(center, length, a, rotate_theta, round_param, points):
     return sdf
 
 
-def trapezoid_sdf(center, bottom_width, top_width, height, rotate_theta, round_radius, points):
+def trapezoid_sdf(center, bottom_width, top_width, height, rotate_theta, round_param_radius, points):
     """
     带圆角的等边梯形有向距离函数
 
@@ -586,7 +588,7 @@ def trapezoid_sdf(center, bottom_width, top_width, height, rotate_theta, round_r
     r1 = (bottom_width / 2.0) / scale_factor  # 下底半宽（标准化）
     r2 = (top_width / 2.0) / scale_factor  # 上底半宽（标准化）
     h = (height / 2.0) / scale_factor  # 半高（标准化）
-    radius = round_radius / scale_factor  # 圆角半径（标准化）
+    radius = round_param_radius / scale_factor  # 圆角半径（标准化）
     # 4. 坐标变换
     translated = points - jnp.array(center)
     cos_t = jnp.cos(rotate_theta)
@@ -626,20 +628,20 @@ def trapezoid_sdf(center, bottom_width, top_width, height, rotate_theta, round_r
     return sdf
 
 
-def star_sdf(center, radius, theta, external_angle, round, k, points):
+def star_sdf(center, radius, theta, external_angle, round_param, k, points):
     cx, cy = center
     r = jnp.maximum(radius, 1e-8)
-    round_param = jnp.maximum(round, 0.0)
+    round_param = jnp.maximum(round_param, 0.0)
     k = jnp.maximum(k, 1e-8)  # 避免除以零
     n = 5.0  # 五角星（固定为5个角，可根据需要修改）
 
     # 统一坐标格式为 (2, N)
     if points.shape[0] != 2:
-        coords = points.T  # 转换为 (2, N) 方便矩阵运算
+        points = points.T  # 转换为 (2, N) 方便矩阵运算
 
     # 步骤1：转换到局部坐标系并应用旋转
     # 平移到以中心为原点
-    p = coords - jnp.array([[cx], [cy]])  # 形状 (2, N)
+    p = points - jnp.array([[cx], [cy]])  # 形状 (2, N)
 
     # 构建旋转矩阵（反向旋转抵消星形自身旋转）
     cos_theta = jnp.cos(-theta)
@@ -694,6 +696,65 @@ def star_sdf(center, radius, theta, external_angle, round, k, points):
     sdf = jnp.linalg.norm(p, axis=0) * jnp.sign(p[0, :]) - round_param  # (N,)
     return sdf
 
+def isosceles_triangle_sdf(center,width,height,rotate_theta,round_param,points):
+    """
+    sdIsoscelesTriangle: JAX支持的等腰三角形带圆角符号距离函数
+        Input:
+            Params Dim:6
+            Params:(x,y,width,height,rotate_theta,round_param)
+            Coords:像素点坐标，形状为(2, N)，N为像素总数
+            注：
+                1.(x,y)为顶点坐标,不是底边中心坐标;
+                2.width为底边长度;
+                3.height为底边高的长度;
+    """
+
+    size = points.shape[0]
+
+    x,y=center
+    cos_theta = jnp.cos(rotate_theta)
+    sin_theta = jnp.sin(rotate_theta)
+    rotate_mat = jnp.array([[cos_theta, -sin_theta],
+                      [sin_theta, cos_theta]])
+    translation = jnp.array([x, y], dtype=jnp.float32).reshape(2, 1)
+    if points.shape[0] != 2:
+        points = points.T  # (2, N)
+    # 坐标变换（旋转和平移）- 使用JAX的矩阵运算
+    new_coords = rotate_mat @ (points - translation)
+    p = new_coords
+    point = jnp.array([width / 2.0, -height], dtype=jnp.float32)
+    pt = point.reshape(2, 1)
+
+    # 计算对称的x坐标（绝对值）
+    p = p.at[0, :].set(jnp.abs(p[0, :]))
+
+    # 向量点积计算
+    dot_pb = jnp.dot(point, p)
+    dot_bb = jnp.dot(point, point)
+
+    # 计算距离分量（使用JAX的clip替代np.clip）
+    qp1 = p - pt * jnp.clip(dot_pb / (dot_bb+1e-12), 0.0, 1.0)
+
+    # 堆叠操作使用jnp.stack替代np.stack
+    qp2 = p - pt * jnp.stack([
+        jnp.clip(p[0, :] / point[0], 0.0, 1.0),
+        jnp.ones(p.shape[1], dtype=jnp.float32)
+    ])
+
+    # 计算距离和符号检查
+    check1 = jnp.stack([
+        jnp.linalg.norm(qp1, axis=0),
+        p[0, :] * point[1] - p[1, :] * point[0]
+    ])
+    check2 = jnp.stack([
+        jnp.linalg.norm(qp2, axis=0),
+        p[1, :] - point[1]
+    ])
+
+    check = jnp.minimum(check1, check2)
+    # 计算最终SDF
+    sdf = -check[0, :] * jnp.sign(check[1, :]) - round_param
+    return sdf
 
 def differentiable_rasterize(primitives, grid, softness=150, is_final_render=False):
     """
@@ -722,21 +783,21 @@ def differentiable_rasterize(primitives, grid, softness=150, is_final_render=Fal
         if isinstance(prim, Circle):
             sdf = Circle_sdf(prim.center, prim.radius, points)
         elif isinstance(prim, Rectangle):
-            sdf = rectangle_sdf(prim.center, prim.size, prim.rotate_theta, prim.round, points)
-        elif isinstance(prim, Triangle):
-            sdf = triangle_sdf(prim.center, prim.radius, prim.rotate_theta, prim.round, points)
+            sdf = rectangle_sdf(prim.center, prim.size, prim.rotate_theta, prim.round_param, points)
+        elif isinstance(prim, EquilateralTriangle):
+            sdf = equilateral_triangle_sdf(prim.center, prim.radius, prim.rotate_theta, prim.round_param, points)
         elif isinstance(prim, Capsule):
-            # sdf = capsule_sdf(prim.center, prim.radius, prim.rotate_theta, prim.round, points)
-            sdf = curved_capsule_sdf(prim.center, prim.length, prim.a, prim.rotate_theta, prim.round, points)
+            sdf = curved_capsule_sdf(prim.center, prim.length, prim.a, prim.rotate_theta, prim.round_param, points)
         elif isinstance(prim, Arc):
-            sdf = arc_sdf(prim.center, prim.shape_theta, prim.rotate_theta, prim.radius, prim.round, points)
+            sdf = arc_sdf(prim.center, prim.shape_theta, prim.rotate_theta, prim.radius, prim.round_param, points)
         elif isinstance(prim, Trapezoid):
-            sdf = trapezoid_sdf(prim.center, prim.width1, prim.width2, prim.height, prim.rotate_theta, prim.round,
-                                points)
+            sdf = trapezoid_sdf(prim.center, prim.width1, prim.width2, prim.height, prim.rotate_theta, prim.round_param,points)
         elif isinstance(prim, Star):
-            sdf = star_sdf(prim.center, prim.radius, prim.theta, prim.external_angle, prim.round, prim.k, points)
+            sdf = star_sdf(prim.center, prim.radius, prim.theta, prim.external_angle, prim.round_param, prim.k, points)
         elif isinstance(prim, halfCircle):
-            sdf = star_sdf(prim.center, prim.radius, prim.rotate_theta, prim.round, points)
+            sdf = star_sdf(prim.center, prim.radius, prim.rotate_theta, prim.round_param, points)
+        elif isinstance(prim, IsoscelesTriangle):
+            sdf = isosceles_triangle_sdf(prim.center, prim.width, prim.height, prim.rotate_theta, prim.round_param,points)
         sdf_values.append(sdf)
 
     sdf_matrix = jnp.stack(sdf_values, axis=0)  # [M, N]
@@ -822,7 +883,7 @@ def load_parameters(file_path):
             primitives.append(Circle(center, radius, color, depth))
 
         elif prim_type == 1:
-            center_x, center_y, width, height, rotate_theta, round = map(float, sparams)
+            center_x, center_y, width, height, rotate_theta, round_param = map(float, sparams)
             # 确保参数在有效范围内
             center_x = jnp.clip(center_x, 0.0, 1.0)
             center_y = jnp.clip(center_y, 0.0, 1.0)
@@ -831,45 +892,71 @@ def load_parameters(file_path):
 
             center = jnp.array([center_x, center_y])
             size = jnp.array([width, height])
-            primitives.append(Rectangle(center, size, rotate_theta, round, color, depth))
+            rotate_theta = jnp.array(rotate_theta)
+            round_param = jnp.array(round_param)
+            primitives.append(Rectangle(center, size, rotate_theta, round_param, color, depth))
         elif prim_type == 2:
-            center_x, center_y, radius, rotate_theta, round = map(float, sparams)
+            center_x, center_y, radius, rotate_theta, round_param = map(float, sparams)
             center = jnp.array([center_x, center_y])
-
-            primitives.append(Triangle(center, radius, rotate_theta, round, color, depth))
+            radius = jnp.array(radius)
+            rotate_theta = jnp.array(rotate_theta)
+            round_param = jnp.array(round_param)
+            primitives.append(EquilateralTriangle(center, radius, rotate_theta, round_param, color, depth))
         elif prim_type == 3:
-            # center_x, center_y, round, rotate_theta,radius = map(float, sparams)
-            # center = jnp.array([center_x, center_y])
-            # primitives.append(Capsule(center, radius, rotate_theta, round,  color, depth))
-            center_x, center_y, length, a, rotate_theta, round = map(float, sparams)
+            center_x, center_y, length, a, rotate_theta, round_param = map(float, sparams)
             center = jnp.array([center_x, center_y])
-            primitives.append(Capsule(center, length, a, rotate_theta, round, color, depth))
+            length = jnp.array(length)
+            a = jnp.array(a)
+            rotate_theta = jnp.array(rotate_theta)
+            round_param = jnp.array(round_param)
+            primitives.append(Capsule(center, length, a, rotate_theta, round_param, color, depth))
         elif prim_type == 4:
-            center_x, center_y, shape_theta, rotate_theta, radius, round = map(float, sparams)
+            center_x, center_y, shape_theta, rotate_theta, radius, round_param = map(float, sparams)
             # 确保参数在有效范围内
             center_x = jnp.clip(center_x, 0.0, 1.0)
             center_y = jnp.clip(center_y, 0.0, 1.0)
             center = jnp.array([center_x, center_y])
-            primitives.append(Arc(center, jnp.array(shape_theta), jnp.array(rotate_theta), radius, round,
+            radius = jnp.array(radius)
+            round_param = jnp.array(round_param)
+            primitives.append(Arc(center, jnp.array(shape_theta), jnp.array(rotate_theta), radius, round_param,
                                   color, depth))
         elif prim_type == 5:
-            center_x, center_y, width1, width2, height, rotate_theta, round = map(float, sparams)
+            center_x, center_y, width1, width2, height, rotate_theta, round_param = map(float, sparams)
             center = jnp.array([center_x, center_y])
-            primitives.append(Trapezoid(center, width1, width2, height, rotate_theta, round, color, depth))
+            width1 = jnp.array(width1)
+            width2 = jnp.array(width2)
+            height = jnp.array(height)
+            rotate_theta = jnp.array(rotate_theta)
+            round_param = jnp.array(round_param)
+            primitives.append(Trapezoid(center, width1, width2, height, rotate_theta, round_param, color, depth))
         elif prim_type == 6:
-            center_x, center_y, radius, theta, external_angle, rotate_theta, round = map(float, sparams)
+            center_x, center_y, radius, theta, external_angle, rotate_theta, round_param = map(float, sparams)
 
             # 确保参数在有效范围内
             center_x = jnp.clip(center_x, 0.0, 1.0)
             center_y = jnp.clip(center_y, 0.0, 1.0)
             center = jnp.array([center_x, center_y])
-            # 创建五角星图元
-            primitives.append(Star(center, radius, theta, external_angle, rotate_theta, round, color, depth))
+            radius = jnp.array(radius)
+            theta = jnp.array(theta)
+            external_angle = jnp.array(external_angle)
+            rotate_theta = jnp.array(rotate_theta)
+            round_param = jnp.array(round_param)
+            primitives.append(Star(center, radius, theta, external_angle, rotate_theta, round_param, color, depth))
         elif prim_type == 7:
-            center_x, center_y, radius, rotate_theta, round = map(float, sparams)
+            center_x, center_y, radius, rotate_theta, round_param = map(float, sparams)
             center = jnp.array([center_x, center_y])
-            primitives.append(halfCircle(center, radius, rotate_theta, round, color, depth))
-
+            radius = jnp.array(radius)
+            rotate_theta = jnp.array(rotate_theta)
+            round_param = jnp.array(round_param)
+            primitives.append(halfCircle(center, radius, rotate_theta, round_param, color, depth))
+        elif prim_type == 8:
+            center_x, center_y, width, height, rotate_theta, round_param = map(float, sparams)
+            center = jnp.array([center_x, center_y])
+            width = jnp.array(width)
+            height = jnp.array(height)
+            rotate_theta = jnp.array(rotate_theta)
+            round_param = jnp.array(round_param)
+            primitives.append(IsoscelesTriangle(center, width, height, rotate_theta, round_param, color, depth))
     return primitives
 
 
@@ -889,53 +976,44 @@ def save_parameters(file_path, primitives, height, width):
                 cx_norm, cy_norm = prim.center
                 w_norm, h_norm = prim.size
                 rotate_theta = prim.rotate_theta
-                round = prim.round
+                round_param = prim.round_param
                 cr, cg, cb, ca = prim.color
                 depth = prim.depth
 
                 f.write(f"1 {cx_norm:.6f} {cy_norm:.6f} {w_norm:.6f} {h_norm:.6f} "
-                        f"{rotate_theta:.6f} {round:.6f} {cr:.6f} {cg:.6f} {cb:.6f} {ca:.6f} {depth:.6f}\n")
-            elif isinstance(prim, Triangle):
+                        f"{rotate_theta:.6f} {round_param:.6f} {cr:.6f} {cg:.6f} {cb:.6f} {ca:.6f} {depth:.6f}\n")
+            elif isinstance(prim, EquilateralTriangle):
                 cx_norm, cy_norm = prim.center
                 radius = prim.radius
                 rotate_theta = prim.rotate_theta
-                round = prim.round
+                round_param = prim.round_param
                 cr, cg, cb, ca = prim.color
                 depth = prim.depth
 
                 f.write(f"2 {cx_norm:.6f} {cy_norm:.6f} {radius:.6f} "
-                        f"{rotate_theta:.6f} {round:.6f} {cr:.6f} {cg:.6f} {cb:.6f} {ca:.6f} {depth:.6f}\n")
+                        f"{rotate_theta:.6f} {round_param:.6f} {cr:.6f} {cg:.6f} {cb:.6f} {ca:.6f} {depth:.6f}\n")
 
             elif isinstance(prim, Capsule):
-                # cx_norm, cy_norm = prim.center
-                # radius = prim.radius
-                # round = prim.round
-                # rotate_theta = prim.rotate_theta
-                # cr, cg, cb, ca = prim.color
-                # depth = prim.depth
-                #
-                # f.write(f"3 {cx_norm:.6f} {cy_norm:.6f} {radius:.6f} {rotate_theta:.6f} {round:.6f} "
-                #         f"{cr:.6f} {cg:.6f} {cb:.6f} {ca:.6f} {depth:.6f}\n")
                 cx_norm, cy_norm = prim.center
                 length = prim.length
                 a = prim.a
-                round = prim.round
+                round_param = prim.round_param
                 rotate_theta = prim.rotate_theta
                 cr, cg, cb, ca = prim.color
                 depth = prim.depth
 
-                f.write(f"3 {cx_norm:.6f} {cy_norm:.6f} {length:.6f} {a:.6f} {rotate_theta:.6f} {round:.6f} "
+                f.write(f"3 {cx_norm:.6f} {cy_norm:.6f} {length:.6f} {a:.6f} {rotate_theta:.6f} {round_param:.6f} "
                         f"{cr:.6f} {cg:.6f} {cb:.6f} {ca:.6f} {depth:.6f}\n")
             elif isinstance(prim, Arc):
                 cx_norm, cy_norm = prim.center
                 radius = prim.radius
-                round = prim.round
+                round_param = prim.round_param
                 rotate_theta = prim.rotate_theta
                 shape_theta = prim.shape_theta
                 cr, cg, cb, ca = prim.color
                 depth = prim.depth
 
-                f.write(f"4 {cx_norm:.6f} {cy_norm:.6f} {shape_theta:.6f} {rotate_theta:.6f} {radius:.6f} {round:.6f} "
+                f.write(f"4 {cx_norm:.6f} {cy_norm:.6f} {shape_theta:.6f} {rotate_theta:.6f} {radius:.6f} {round_param:.6f} "
                         f" {cr:.6f} {cg:.6f} {cb:.6f} {ca:.6f} {depth:.6f}\n")
             elif isinstance(prim, Trapezoid):
                 cx_norm, cy_norm = prim.center
@@ -943,36 +1021,46 @@ def save_parameters(file_path, primitives, height, width):
                 width2 = prim.width2
                 height = prim.height
                 rotate_theta = prim.rotate_theta
-                round = prim.round
+                round_param = prim.round_param
                 cr, cg, cb, ca = prim.color
                 depth = prim.depth
 
                 f.write(
-                    f"5 {cx_norm:.6f} {cy_norm:.6f} {width1:.6f} {width2:.6f} {height:.6f} {rotate_theta:.6f} {round:.6f}"
+                    f"5 {cx_norm:.6f} {cy_norm:.6f} {width1:.6f} {width2:.6f} {height:.6f} {rotate_theta:.6f} {round_param:.6f}"
                     f"{cr:.6f} {cg:.6f} {cb:.6f} {ca:.6f} {depth:.6f}\n")
             elif isinstance(prim, Star):
                 cx_norm, cy_norm = prim.center
                 radius = prim.radius
                 theta = prim.theta
                 external_angle = prim.external_angle
-                round = prim.round
+                round_param = prim.round_param
                 k = prim.k
                 cr, cg, cb, ca = prim.color
                 depth = prim.depth
 
                 f.write(f"6 {cx_norm:.6f} {cy_norm:.6f} {radius:.6f} {theta:.6f} "
-                        f"{external_angle:.6f} {round:.6f} {k:.6f} {cr:.6f} {cg:.6f} {cb:.6f} {ca:.6f} {depth:.6f}\n")
+                        f"{external_angle:.6f} {round_param:.6f} {k:.6f} {cr:.6f} {cg:.6f} {cb:.6f} {ca:.6f} {depth:.6f}\n")
             elif isinstance(prim, halfCircle):
                 cx_norm, cy_norm = prim.center
                 radius = prim.radius
                 rotate_theta = prim.rotate_theta
-                round = prim.round
+                round_param = prim.round_param
                 cr, cg, cb, ca = prim.color
                 depth = prim.depth
 
                 f.write(
-                    f"7 {cx_norm:.6f} {cy_norm:.6f} {radius:.6f} {rotate_theta:.6f} {round:.6f} {cr:.6f} {cg:.6f} {cb:.6f} {ca:.6f} {depth:.6f}\n")
-
+                    f"7 {cx_norm:.6f} {cy_norm:.6f} {radius:.6f} {rotate_theta:.6f} {round_param:.6f} {cr:.6f} {cg:.6f} {cb:.6f} {ca:.6f} {depth:.6f}\n")
+            elif isinstance(prim, IsoscelesTriangle):
+                cx_norm, cy_norm = prim.center
+                width = prim.width
+                height = prim.height
+                rotate_theta = prim.rotate_theta
+                round_param = prim.round_param
+                cr, cg, cb, ca = prim.color
+                depth = prim.depth
+                f.write(
+                    f"8 {cx_norm:.6f} {cy_norm:.6f} {width:.6f} {height:.6f} {rotate_theta:.6f} {round_param:.6f}"
+                    f" {cr:.6f} {cg:.6f} {cb:.6f} {ca:.6f} {depth:.6f}\n")
 
 def edge_consistency_loss(rendered_img, target_img, mask=None):
     """
@@ -1035,21 +1123,22 @@ def intersection_aware_loss(primitives, grid, target_rgb, rendered_rgb):
         if isinstance(prim, Circle):
             sdf = Circle_sdf(prim.center, prim.radius, points)
         elif isinstance(prim, Rectangle):
-            sdf = rectangle_sdf(prim.center, prim.size, prim.rotate_theta, prim.round, points)
-        elif isinstance(prim, Triangle):
-            sdf = triangle_sdf(prim.center, prim.radius, prim.rotate_theta, prim.round, points)
+            sdf = rectangle_sdf(prim.center, prim.size, prim.rotate_theta, prim.round_param, points)
+        elif isinstance(prim, EquilateralTriangle):
+            sdf = equilateral_triangle_sdf(prim.center, prim.radius, prim.rotate_theta, prim.round_param, points)
         elif isinstance(prim, Capsule):
-            # sdf = capsule_sdf(prim.center, prim.radius, prim.rotate_theta, prim.round, points)
-            sdf = curved_capsule_sdf(prim.center, prim.length, prim.a, prim.rotate_theta, prim.round, points)
+            # sdf = capsule_sdf(prim.center, prim.radius, prim.rotate_theta, prim.round_param, points)
+            sdf = curved_capsule_sdf(prim.center, prim.length, prim.a, prim.rotate_theta, prim.round_param, points)
         elif isinstance(prim, Arc):
-            sdf = arc_sdf(prim.center, prim.shape_theta, prim.rotate_theta, prim.radius, prim.round, points)
+            sdf = arc_sdf(prim.center, prim.shape_theta, prim.rotate_theta, prim.radius, prim.round_param, points)
         elif isinstance(prim, Trapezoid):
-            sdf = trapezoid_sdf(prim.center, prim.width1, prim.width2, prim.height, prim.rotate_theta, prim.round,
-                                points)
+            sdf = trapezoid_sdf(prim.center, prim.width1, prim.width2, prim.height, prim.rotate_theta, prim.round_param,points)
         elif isinstance(prim, Star):
-            sdf = star_sdf(prim.center, prim.radius, prim.theta, prim.external_angle, prim.round, prim.k, points)
+            sdf = star_sdf(prim.center, prim.radius, prim.theta, prim.external_angle, prim.round_param, prim.k, points)
         elif isinstance(prim, halfCircle):
-            sdf = star_sdf(prim.center, prim.radius, prim.rotate_theta, prim.round, points)
+            sdf = star_sdf(prim.center, prim.radius, prim.rotate_theta, prim.round_param, points)
+        elif isinstance(prim, IsoscelesTriangle):
+            sdf = isosceles_triangle_sdf(prim.center, prim.width, prim.height, prim.rotate_theta, prim.round_param,points)
         sdf_matrix.append(sdf)
 
     sdf_matrix = jnp.stack(sdf_matrix)  # [M, N]
@@ -1150,46 +1239,37 @@ def to_params(primitives):
             params_type.append('0')
         elif isinstance(prim, Rectangle):
 
-            round_log = prim.round
+            round_param_log = prim.round_param
             params.append({
                 'center': prim.center,
                 'size': prim.size,
                 'rotate_theta': prim.rotate_theta,
-                'round': round_log,
+                'round_param': round_param_log,
                 'color': color_logit,
                 'depth': prim.depth,
             })
             params_type.append('1')
-        elif isinstance(prim, Triangle):
-            round_log = prim.round
+        elif isinstance(prim, EquilateralTriangle):
+            round_param_log = prim.round_param
 
             params.append({
                 'center': prim.center,
                 'radius': prim.radius,
                 'rotate_theta': prim.rotate_theta,
-                'round': round_log,
+                'round_param': round_param_log,
                 'color': color_logit,
                 'depth': prim.depth,
             })
             params_type.append('2')
         elif isinstance(prim, Capsule):
-            # a=jnp.maximum(prim.a,1e-6)
-            # a = jnp.maximum(prim.a, 1e-12)  # 对数变换，确保参数空间无约束
-            round_log = jnp.log(jnp.maximum(prim.round, 0))
-            # params.append({
-            #     'center': prim.center,
-            #     'radius': radius_log,
-            #     'rotate_theta': prim.rotate_theta,
-            #     'round': round_log,
-            #     'color': color_logit,
-            #     'depth': prim.depth
-            # })
+
+            round_param_log = jnp.log(jnp.maximum(prim.round_param, 0))
             params.append({
                 'center': prim.center,
                 'length': prim.length,
                 'a': prim.a,
                 'rotate_theta': prim.rotate_theta,
-                'round': round_log,
+                'round_param': round_param_log,
                 'color': color_logit,
                 'depth': prim.depth
             })
@@ -1200,7 +1280,7 @@ def to_params(primitives):
                 'shape_theta': prim.shape_theta,
                 'rotate_theta': prim.rotate_theta,
                 'radius': prim.radius,
-                'round': prim.round,
+                'round_param': prim.round_param,
                 'color': color_logit,
                 'depth': prim.depth
             })
@@ -1214,7 +1294,7 @@ def to_params(primitives):
                 'width2': width2,
                 'height': prim.height,
                 'rotate_theta': prim.rotate_theta,
-                'round': prim.round,
+                'round_param': prim.round_param,
                 'color': color_logit,
                 'depth': prim.depth
             })
@@ -1226,7 +1306,7 @@ def to_params(primitives):
                 'radius': prim.radius,
                 'theta': prim.theta,
                 'external_angle': prim.external_angle,
-                'round': prim.round,
+                'round_param': prim.round_param,
                 'k': prim.k,
                 'color': color_logit,
                 'depth': prim.depth
@@ -1237,12 +1317,22 @@ def to_params(primitives):
                 'center': prim.center,
                 'radius': prim.radius,
                 'rotate_theta': prim.rotate_theta,
-                'round': prim.round,
+                'round_param': prim.round_param,
                 'color': color_logit,
                 'depth': prim.depth
             })
             params_type.append('7')
-
+        elif isinstance(prim, IsoscelesTriangle):
+            params.append({
+                'center': prim.center,
+                'width': prim.width,
+                'height': prim.height,
+                'rotate_theta': prim.rotate_theta,
+                'round_param': prim.round_param,
+                'color': color_logit,
+                'depth': prim.depth
+            })
+            params_type.append('8')
     return params, params_type
 
 
@@ -1261,48 +1351,39 @@ def from_params(params, params_type):
                 param['depth']
             ))
         elif type_name == '1':  # 矩形
-            round = param['round']
-            round = jnp.minimum(round, jnp.min(param['size']) / 2)
+            round_param = param['round_param']
+            round_param = jnp.minimum(round_param, jnp.min(param['size']) / 2)
 
             prims.append(Rectangle(
                 param['center'],
                 param['size'],
                 param['rotate_theta'],
-                round,
+                round_param,
                 color,
                 param['depth']
             ))
         elif type_name == '2':  # 三角形
-            round = param['round']
+            round_param = param['round_param']
             depth = param['depth']
 
             prims.append(Triangle(
                 param['center'],
                 param['radius'],
                 param['rotate_theta'],
-                round,
+                round_param,
                 color,
                 depth
             ))
         elif type_name == '3':
-            # a = jnp.exp(param['a'])  # 指数变换，确保为正
-            round = jnp.exp(param['round'])
-            # a = jnp.exp(param['a'])  # 指数函数确保a始终为正
-            # a = jnp.clip(param['a'], 0, 10.0)
-            # prims.append(Capsule(
-            #     param['center'],
-            #     radius,
-            #     param['rotate_theta'],
-            #     round,
-            #     color,
-            #     param['depth']
-            # ))
+
+            round_param = jnp.exp(param['round_param'])
+
             prims.append(Capsule(
                 param['center'],
                 param['length'],
                 param['a'],
                 param['rotate_theta'],
-                round,
+                round_param,
                 color,
                 param['depth']
             ))
@@ -1312,13 +1393,12 @@ def from_params(params, params_type):
                 param['shape_theta'],
                 param['rotate_theta'],
                 param['radius'],
-                param['round'],
+                param['round_param'],
                 color,
                 param['depth']
             ))
         elif type_name == '5':
             width1 = param['width1']
-
             width2 = param['width2']
             prims.append(Trapezoid(
                 param['center'],
@@ -1326,19 +1406,19 @@ def from_params(params, params_type):
                 width2,
                 param['height'],
                 param['rotate_theta'],
-                param['round'],
+                param['round_param'],
                 color,
                 param['depth']
             ))
         elif type_name == '6':
-            round = jnp.maximum(param['round'], 0.0)  # 指数变换（实数→正值）
+            round_param = jnp.maximum(param['round_param'], 0.0)  # 指数变换（实数→正值）
             k = jnp.maximum(param['k'], 0.001)
             prims.append(Star(
                 param['center'],
                 param['radius'],
                 param['theta'],
                 param['external_angle'],
-                round,
+                round_param,
                 k,
                 color,
                 param['depth']
@@ -1348,7 +1428,17 @@ def from_params(params, params_type):
                 param['center'],
                 param['radius'],
                 param['rotate_theta'],
-                param['round'],
+                param['round_param'],
+                color,
+                param['depth']
+            ))
+        elif type_name == '8':
+            prims.append(IsoscelesTriangle(
+                param['center'],
+                param['width'],
+                param['height'],
+                param['rotate_theta'],
+                param['round_param'],
                 color,
                 param['depth']
             ))
@@ -1422,7 +1512,7 @@ def optimize_primitives(primitives, grid, target_img, output, steps, lr):
                     # # 弯曲胶囊的 'a' 参数梯度缩放
                     elif prim_type == '3' and k == 'a':
                         frozen_grad[k] = v * 1e-5  # 同样缩小梯度
-                    elif prim_type == '3' and k == 'round':
+                    elif prim_type == '3' and k == 'round_param':
                         frozen_grad[k] = jnp.zeros_like(v)
 
                     else:
@@ -1485,7 +1575,7 @@ def optimize_primitives(primitives, grid, target_img, output, steps, lr):
                 # 新增：遍历每个图元的梯度
                 for i, prim_grad in enumerate(grads):
                     grad_info = {}
-                    print(f"图元 {i}:")
+                    #print(f"图元 {i}:")
                     for param_name, g in prim_grad.items():
                         # 计算梯度的L2范数和最大值
                         g_flat = jnp.ravel(g)
@@ -1497,7 +1587,7 @@ def optimize_primitives(primitives, grid, target_img, output, steps, lr):
                             'norm': jax.device_get(grad_norm),
                             'max': jax.device_get(grad_max)
                         }
-                    print(f"grad_info: {grad_info}")
+                    #print(f"grad_info: {grad_info}")
                     step_grads.append(grad_info)
                 grad_history.append(step_grads)
                 # 检查NaN值
@@ -1584,7 +1674,7 @@ def optimize_edge(primitives, grid, target_img, output, steps=500, lr=0.01):
                 # # 弯曲胶囊的 'a' 参数梯度缩放
                 elif prim_type == '3' and k == 'a':
                     frozen_grad[k] = v * 1e-7  # 同样缩小梯度
-                elif prim_type == '3' and k == 'round':
+                elif prim_type == '3' and k == 'round_param':
                     frozen_grad[k] = v * 1e-8
 
                 else:
@@ -1719,20 +1809,21 @@ def optimized_differentiable_rasterize(primitives, grid, softness=100, threshold
         if isinstance(prim, Circle):
             sdf = Circle_sdf(prim.center, prim.radius, points)
         elif isinstance(prim, Rectangle):
-            sdf = rectangle_sdf(prim.center, prim.size, prim.rotate_theta, prim.round, points)
-        elif isinstance(prim, Triangle):
-            sdf = triangle_sdf(prim.center, prim.radius, prim.rotate_theta, prim.round, points)
+            sdf = rectangle_sdf(prim.center, prim.size, prim.rotate_theta, prim.round_param, points)
+        elif isinstance(prim, EquilateralTriangle):
+            sdf = equilateral_triangle_sdf(prim.center, prim.radius, prim.rotate_theta, prim.round_param, points)
         elif isinstance(prim, Capsule):
-            sdf = curved_capsule_sdf(prim.center, prim.length, prim.a, prim.rotate_theta, prim.round, points)
+            sdf = curved_capsule_sdf(prim.center, prim.length, prim.a, prim.rotate_theta, prim.round_param, points)
         elif isinstance(prim, Arc):
-            sdf = arc_sdf(prim.center, prim.shape_theta, prim.rotate_theta, prim.radius, prim.round, points)
+            sdf = arc_sdf(prim.center, prim.shape_theta, prim.rotate_theta, prim.radius, prim.round_param, points)
         elif isinstance(prim, Trapezoid):
-            sdf = trapezoid_sdf(prim.center, prim.width1, prim.width2, prim.height, prim.rotate_theta, prim.round,
-                                points)
+            sdf = trapezoid_sdf(prim.center, prim.width1, prim.width2, prim.height, prim.rotate_theta, prim.round_param,points)
         elif isinstance(prim, Star):
-            sdf = star_sdf(prim.center, prim.radius, prim.theta, prim.external_angle, prim.round, prim.k, points)
+            sdf = star_sdf(prim.center, prim.radius, prim.theta, prim.external_angle, prim.round_param, prim.k, points)
         elif isinstance(prim, halfCircle):
-            sdf = star_sdf(prim.center, prim.radius, prim.rotate_theta, prim.round, points)
+            sdf = star_sdf(prim.center, prim.radius, prim.rotate_theta, prim.round_param, points)
+        elif isinstance(prim, IsoscelesTriangle):
+            sdf = isosceles_triangle_sdf(prim.center, prim.width, prim.height, prim.rotate_theta, prim.round_param,points)
         # SDF <= 0 表示像素在图元内部（不透明，完全覆盖）
         sdf_clamped = jnp.clip(sdf, -50.0, 50.0)
 
@@ -1862,9 +1953,9 @@ def main(target_image_path, init_params_path, output_dir):
 
 
 if __name__ == "__main__":
-    name = "star"
+    name = "face_sculpt"
     target_image_path = "images/" + name + ".png"
     target_params_path = "infos/" + name + ".json"
-    output = "output/20250820/" + name
+    output = "output/20250828/" + name
     main(target_image_path, target_params_path, output)
 
